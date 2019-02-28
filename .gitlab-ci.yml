@@ -5,10 +5,6 @@ stages:
 before_script:
 - npm install
 
-cache:
-  paths:
-  - node_modules/
-
 build:
   stage: build
   image: node:8
