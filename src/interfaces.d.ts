@@ -205,3 +205,14 @@ export interface IDbDataReader<T> {
   readManyOrRejectNotFound(dbResult: IQueryData[]): T[];
   readCount(data: ICountData[]): number;
 }
+
+export interface ISqlTransaction<TQuery> extends IQueryExecutor<TQuery> {
+  readonly finished: boolean;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
+}
+
+export interface ISqlDataDriver<TQuery> extends IQueryExecutor<TQuery> {
+  begin(): Promise<ISqlTransaction<TQuery>>;
+  end(): Promise<void>;
+}
