@@ -1,4 +1,4 @@
-import {ColumnWrapper, Operandable} from "./wrappers";
+import {ColumnWrapper, Operandable} from './wrappers';
 import {
   ColumnsBuilder,
   ColumnsList,
@@ -19,9 +19,10 @@ import {
   OrderBuilder,
   TableMetaProvider,
   ValuesBuilder,
-  WhereBuilder
-} from "./interfaces";
-import {and} from "./operators";
+  WhereBuilder,
+  IFieldInfo
+} from './interfaces';
+import {and} from './operators';
 
 export interface IExpr {
   _alias?: string
@@ -36,7 +37,7 @@ function proxy<T>({tableName, fields, primaryKey}: ITableInfo): any {
   return new Proxy({}, {
     get(_, property: string) {
       if (!fields.has(property)) {
-        throw new Error(`Field "${property}" should be annotated with @dbField() or @dbManyField()`);
+        throw new Error(`Field '${property}' should be annotated with @dbField() or @dbManyField()`);
       }
 
       const {relatedTo, name} = fields.get(property)!;
@@ -68,26 +69,39 @@ function proxy<T>({tableName, fields, primaryKey}: ITableInfo): any {
   });
 }
 
-function treeOf<T>(_: Optional<T>, {tableName, fields}: ITableInfo): any {
+function treeOf<T>(_: Optional<T>, tableInfo: ITableInfo): any {
+  validateModel(_, tableInfo);
   return and(
     ...Object.keys(_)
-      .map(field => (new ColumnWrapper(prefix + field) as IOperandable<T>).eq(_[field]))
+      .map(field => (new ColumnWrapper(resolveColumn(field as string, tableInfo)) as IOperandable<T>).eq(_[field]))
   );
 }
 
 function columnsOf<T>(_: ColumnsList<T>, {tableName, fields}: ITableInfo): any {
   _.forEach(field => {
     if (!fields.has(field as string) || fields.get(field as string)!.relatedTo) {
-      throw new Error(`Field "${field}" should be decorated with @dbField()`)
+      throw new Error(`Field '${field}' should be decorated with @dbField()`)
     }
   });
-  return _.map(field => ({_column: tableName + '.' + field}));
+  return _.map(field => ({_column: resolveColumn(field as string, {tableName, fields})}));
+}
+
+function resolveColumn(property: string, {tableName, fields}: ITableInfo): string {
+  return tableName + '.' + fields.get(property)!.name;
+}
+
+function validateModel<T>(_: Optional<T>, tableInfo: ITableInfo): void {
+  Object.keys(_).forEach(prop => {
+    if(!tableInfo.fields.has(prop)) {
+      throw new Error(`Field '${prop}' should be annotated with @dbField() or @dbManyField()`);
+    }
+  });
 }
 
 function where<T>(this: IBuildableWherePartial, _: Optional<T> | WhereBuilder<T>) {
   const tree = typeof _ === 'function'
     ? (_ as WhereBuilder<T>)(proxy<T>(this._table))
-    : treeOf(_, this._table + '.');
+    : treeOf(_, this._table);
   this._where = this._where || [];
   this._where.push(tree);
   return this;
@@ -122,7 +136,15 @@ function groupBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | GroupByBuil
 }
 
 function values<T>(this: IBuildableValuesPartial, _: Optional<T> | ValuesBuilder<T>) {
-  this._values = typeof _ === 'function' ? (_ as ValuesBuilder<T>)(proxy<T>(this._table)) : _;
+  if (typeof _ === 'function') {
+    this._values = (_ as ValuesBuilder<T>)(proxy<T>(this._table));
+  } else {
+    validateModel(_, this._table);
+    this._values = Object
+      .keys(_)
+      .map(prop => this._table.fields.get(prop))
+      .reduce((p: any, c: IFieldInfo) => {p[c.name] = c.getValue(_)}, {});
+  }
   return this;
 }
 
