@@ -1,0 +1,16 @@
+{
+  "name": "@viatsyshyn/ts-orm",
+  "version": "0.1.1",
+  "description": "TypeScript ORM",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc && cp src/wrappers* dist/src/ && cp src/interfaces.d.ts dist/src/",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "typescript": "^3.3.3"
+  },
+  "author": "Volodymyr Iatsyshyn <viatsyshyn@gmail.com>",
+  "license": "ISC"
+}
