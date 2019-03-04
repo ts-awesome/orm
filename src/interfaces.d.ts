@@ -136,7 +136,8 @@ interface IBuildableUpsertQuery {
   _type: 'UPSERT'
   _table: ITableInfo
   _values?: any
-  _where?: any[]
+  _where?: any[],
+  _conflitcColumns?: string[],
 }
 
 interface IBuildableUpdateQuery {
@@ -183,7 +184,10 @@ export interface ISelectBuilder<T extends TableMetaProvider<InstanceType<T>>> ex
 }
 
 export interface IInsertBuilder<T> extends IValuesHandler<T>, IBuildableInsertQuery {}
-export interface IUpsertBuilder<T> extends IValuesHandler<T>, IWhereHandler<T>, IBuildableUpsertQuery {}
+
+export interface IUpsertBuilder<T> extends IValuesHandler<T>, IWhereHandler<T>, IBuildableUpsertQuery {
+  conflict(conflictFields: string[]): this
+}
 export interface IUpdateBuilder<T> extends IValuesHandler<T>, IWhereHandler<T>, IBuildableUpdateQuery {}
 export interface IDeleteBuilder<T> extends IWhereHandler<T>, IBuildableDeleteQuery {}
 

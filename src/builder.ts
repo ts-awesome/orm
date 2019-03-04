@@ -20,7 +20,8 @@ import {
   TableMetaProvider,
   ValuesBuilder,
   WhereBuilder,
-  IFieldInfo
+  IFieldInfo,
+  IBuildableUpsertQuery,
 } from './interfaces';
 import {and} from './operators';
 
@@ -91,7 +92,11 @@ function resolveColumn(property: string, {tableName, fields}: ITableInfo): strin
 }
 
 function validateModel<T>(_: Optional<T>, tableInfo: ITableInfo): void {
-  Object.keys(_).forEach(prop => {
+  validateFields(Object.keys(_), tableInfo);
+}
+
+function validateFields(_: string[], tableInfo: ITableInfo): void {
+  _.forEach(prop => {
     if(!tableInfo.fields.has(prop)) {
       throw new Error(`Field '${prop}' should be annotated with @dbField() or @dbManyField()`);
     }
@@ -145,6 +150,12 @@ function values<T>(this: IBuildableValuesPartial, _: Optional<T> | ValuesBuilder
       .map(prop => this._table.fields.get(prop))
       .reduce((p: any, c: IFieldInfo) => {p[c.name] = c.getValue(_)}, {});
   }
+  return this;
+}
+
+function conflict<T>(this: IBuildableUpsertQuery, _: string[]) {
+  validateFields(_, this._table);
+  this._conflitcColumns = _.map(prop => this._table.fields.get(prop)!.name);
   return this;
 }
 
@@ -236,6 +247,7 @@ export function Upsert<T extends TableMetaProvider<InstanceType<T>>>(_: T): IUps
     values,
     where,
     limit,
+    conflict
   } as any;
 }
 
