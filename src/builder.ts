@@ -148,7 +148,7 @@ function values<T>(this: IBuildableValuesPartial, _: Optional<T> | ValuesBuilder
     this._values = Object
       .keys(_)
       .map(prop => this._table.fields.get(prop))
-      .reduce((p: any, c: IFieldInfo) => {p[c.name] = c.getValue(_)}, {});
+      .reduce((p: any, c: IFieldInfo) => ({ ...p, [c.name]: c.getValue(_)}), {});
   }
   return this;
 }
