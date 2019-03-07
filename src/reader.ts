@@ -52,9 +52,24 @@ export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements I
 
   private read(row: IQueryData): InstanceType<T> {
     let res = new this.Model();
+    let colPropMap = {};
     this.tableInfo.fields.forEach(({name}, propName) => {
-      res[propName] = row[name];
+      colPropMap[name] = propName;
     });
+
+    Object.keys(row).forEach(col => {
+      let propName = colPropMap[col];
+      if (propName) {
+        res[propName] = row[col];
+      } else {
+        res[col] = row[col];
+      }
+    });
+
+    // this.tableInfo.fields.forEach(({name}, propName) => {
+    //   res[propName] = row[name];
+    // });
+
     return res;
   }
 }

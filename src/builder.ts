@@ -22,6 +22,7 @@ import {
   WhereBuilder,
   IFieldInfo,
   IBuildableUpsertQuery,
+  Column,
 } from './interfaces';
 import {and} from './operators';
 
@@ -153,9 +154,9 @@ function values<T>(this: IBuildableValuesPartial, _: Optional<T> | ValuesBuilder
   return this;
 }
 
-function conflict<T>(this: IBuildableUpsertQuery, _: string[]) {
-  validateFields(_, this._table);
-  this._conflitcColumns = _.map(prop => this._table.fields.get(prop)!.name);
+function conflict<T>(this: IBuildableUpsertQuery, _: Column<T>[]) {
+  validateFields(_ as string[], this._table);
+  this._conflitcColumns = _.map(prop => this._table.fields.get(prop as string)!.name);
   return this;
 }
 

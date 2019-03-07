@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "build:dev": "tsc",
     "build": "tsc && cp src/wrappers* dist/src/ && cp src/interfaces.d.ts dist/src/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
