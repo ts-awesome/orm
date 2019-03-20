@@ -36,7 +36,7 @@ export interface IExpr {
   _operands?: IExpr[] | [IBuildableQuery]
 }
 
-function proxy<T>({tableName, fields, primaryKey}: ITableInfo): any {
+function proxy<T>({tableName, fields, primaryKey}: ITableInfo, ignoreTableName?: boolean): any {
   return new Proxy({}, {
     get(_, property: string) {
       if (!fields.has(property)) {
@@ -45,7 +45,7 @@ function proxy<T>({tableName, fields, primaryKey}: ITableInfo): any {
 
       const {relatedTo, name} = fields.get(property)!;
       if (!relatedTo) {
-        return new ColumnWrapper(`${tableName}.${name}`);
+        return new ColumnWrapper(ignoreTableName ? name : `${tableName}.${name}`);
       }
 
       if (!primaryKey) {
@@ -181,7 +181,7 @@ function conflict<T>(this: IBuildableUpsertQuery, _?: string) {
     _columns = index.keyFields.map(prop => this._table.fields.get(prop)!.name);
     
     if (index.where) {
-      const tree = typeof _ === 'function'
+      const tree = typeof index.where === 'function'
         ? (index.where as WhereBuilder<T>)(proxy<T>(this._table))
         : treeOf(index.where, this._table);
       _where = [tree];
