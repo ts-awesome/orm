@@ -13,10 +13,18 @@ export interface IFieldInfo {
   getValue: (rec: any) => DbValueType;
 }
 
+export interface IIndexInfo<T> {
+  name: string;
+  keyFields: string[];
+  where?: WhereBuilder<T>;
+  default: boolean;
+}
+
 export interface ITableInfo {
   tableName: string;
   primaryKey?: string;
   fields: Map<string, IFieldInfo>;
+  indexes?: IIndexInfo<any>[];
 }
 
 export type TableMetaProvider<T> = {
@@ -137,7 +145,10 @@ interface IBuildableUpsertQuery {
   _table: ITableInfo
   _values?: any
   _where?: any[],
-  _conflitcColumns?: string[],
+  _conflictExp?: {
+    _columns: string[],
+    _where?: any[]
+  },
 }
 
 interface IBuildableUpdateQuery {
@@ -186,7 +197,7 @@ export interface ISelectBuilder<T extends TableMetaProvider<InstanceType<T>>> ex
 export interface IInsertBuilder<T> extends IValuesHandler<T>, IBuildableInsertQuery {}
 
 export interface IUpsertBuilder<T> extends IValuesHandler<T>, IWhereHandler<T>, IBuildableUpsertQuery {
-  conflict(conflictFields: Column<T>[]): this
+  conflict(_?: string): this
 }
 export interface IUpdateBuilder<T> extends IValuesHandler<T>, IWhereHandler<T>, IBuildableUpdateQuery {}
 export interface IDeleteBuilder<T> extends IWhereHandler<T>, IBuildableDeleteQuery {}

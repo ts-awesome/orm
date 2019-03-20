@@ -25,6 +25,7 @@ import {
   Column,
 } from './interfaces';
 import {and} from './operators';
+import { dbField, dbTable } from './decorators';
 
 export interface IExpr {
   _alias?: string
@@ -154,9 +155,39 @@ function values<T>(this: IBuildableValuesPartial, _: Optional<T> | ValuesBuilder
   return this;
 }
 
-function conflict<T>(this: IBuildableUpsertQuery, _: Column<T>[]) {
-  validateFields(_ as string[], this._table);
-  this._conflitcColumns = _.map(prop => this._table.fields.get(prop as string)!.name);
+function conflict<T>(this: IBuildableUpsertQuery, _?: string) {
+  let _columns: string[] = [];
+  let _where: any[] | undefined = undefined;
+
+  if (!_) {
+    if (!this._table.primaryKey) {
+      throw new Error('Current table has no primary key. Please provide unique index for upsert');
+    }
+    this._table.fields.forEach((v) => {
+      if (v.isPrimaryKey) {
+        _columns.push(v.name);
+      }
+    });
+  } else {
+    if (!this._table.indexes) {
+      throw new Error('Table indexes meta is empty');
+    }
+    const index = this._table.indexes.find(i => i.name === _); 
+    if (!index) {
+      throw new Error(`Index ${_} is not declared for table ${this._table.tableName}`);
+    }
+  
+    validateFields(index.keyFields, this._table);
+    _columns = index.keyFields.map(prop => this._table.fields.get(prop)!.name);
+    
+    if (index.where) {
+      const tree = typeof _ === 'function'
+        ? (_ as WhereBuilder<T>)(proxy<T>(this._table))
+        : treeOf(_, this._table);
+      _where = [tree];
+    }
+  }
+  this._conflictExp = { _columns, _where };
   return this;
 }
 

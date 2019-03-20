@@ -1,19 +1,38 @@
-import {ITableInfo, IFieldInfo} from './interfaces';
+import {ITableInfo, IFieldInfo, WhereBuilder, IIndexInfo} from './interfaces';
 
 function ensureTableInfo(proto: {tableInfo?: ITableInfo}): ITableInfo {
   if (!proto.tableInfo) {
     proto.tableInfo = {
       tableName: '',
-      fields: new Map<string, IFieldInfo>()
+      fields: new Map<string, IFieldInfo>(),
+      indexes: []
     };
   }
 
   return proto.tableInfo;
 }
 
-export function dbTable(tableName: string): ClassDecorator {
+interface IDBIndexMeta<T> {
+  fields: string[];
+  name: string;
+  default?: boolean;
+  where?: WhereBuilder<T>;
+}
+
+export function dbTable<T>(tableName: string, uniqueIndexes?: IDBIndexMeta<T>[]): ClassDecorator {
   return function <TFunction extends Function>(target: TFunction) {
-    ensureTableInfo(target.prototype).tableName = tableName;
+    const tableInfo = ensureTableInfo(target.prototype);
+    tableInfo.tableName = tableName;
+    if (uniqueIndexes) {
+      uniqueIndexes.forEach(ui => {
+        tableInfo.indexes!.push({
+          name: ui.name,
+          keyFields: ui.fields,
+          where: ui.where,
+          default: ui.default || false,
+        });
+      });
+    }
   };
 }
 
@@ -74,4 +93,3 @@ export function dbManyField(fieldMeta: IDBManyFieldMeta): PropertyDecorator {
     });
   };
 }
-
