@@ -182,8 +182,8 @@ function conflict<T>(this: IBuildableUpsertQuery, _?: string) {
     
     if (index.where) {
       const tree = typeof _ === 'function'
-        ? (_ as WhereBuilder<T>)(proxy<T>(this._table))
-        : treeOf(_, this._table);
+        ? (index.where as WhereBuilder<T>)(proxy<T>(this._table))
+        : treeOf(index.where, this._table);
       _where = [tree];
     }
   }
