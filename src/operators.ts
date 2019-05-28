@@ -54,7 +54,13 @@ export function desc<T>(value: Column<T>|IOperandable<T>): Order {
 }
 
 export function of<X extends TableMetaProvider<InstanceType<X>>, T=any>(_: X, field: keyof InstanceType<X>): IOperandable<T> {
-  return (new ColumnWrapper((<any>_).prototype.tableInfo.tableName + '.' + field)) as IOperandable<T>;
+  const {tableName, fields} = (<any>_).prototype.tableInfo;
+
+  if (!fields.has(field)) {
+    throw new Error(`Field '${field}' should be annotated with @dbField() or @dbManyField()`);
+  }
+  const {name} = fields.get(field)!; 
+  return (new ColumnWrapper(tableName + '.' + name)) as IOperandable<T>;
 }
 
 export function alias<T>(expr: T | IOperandable<T>, name: string): IOperandable<T> {
