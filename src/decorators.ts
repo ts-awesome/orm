@@ -42,6 +42,7 @@ interface IDBFieldMeta {
   primaryKey?: boolean;
   autoIncrement?: boolean;
   readonly?: boolean;
+  json?: boolean;
 }
 
 export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator {
@@ -50,7 +51,7 @@ export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator {
     const {fields} = tableInfo;
 
     if (typeof fieldMeta !== 'string' && fieldMeta) {
-      let {name, primaryKey, uid, autoIncrement, readonly}: IDBFieldMeta = fieldMeta;
+      let {name, primaryKey, uid, autoIncrement, readonly, json}: IDBFieldMeta = fieldMeta;
       name = name || key;
       fields.set(key, {
         name,
@@ -58,6 +59,7 @@ export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator {
         uid,
         autoIncrement,
         readonly,
+        json,
         getValue: (rec: any) => rec[key]
       });
       if (primaryKey) {

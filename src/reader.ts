@@ -60,7 +60,15 @@ export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements I
     Object.keys(row).forEach(col => {
       let propName = colPropMap[col];
       if (propName) {
-        res[propName] = row[col];
+        if (this.tableInfo.fields.get(propName)!.json === true) {
+          try {
+            res[propName] = JSON.parse(row[col] as any);
+          } catch(err) {
+            throw new Error(`Invalid JSON value ${row[col]} in colument ${col}`);
+          }
+        } else {
+          res[propName] = row[col];
+        }
       } else {
         res[col] = row[col];
       }

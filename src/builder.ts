@@ -150,7 +150,17 @@ function values<T>(this: IBuildableValuesPartial, _: Optional<T> | ValuesBuilder
     this._values = Object
       .keys(_)
       .map(prop => this._table.fields.get(prop))
-      .reduce((p: any, c: IFieldInfo) => ({ ...p, [c.name]: c.getValue(_)}), {});
+      .reduce((p: any, c: IFieldInfo) => {
+        let value = c.getValue(_);
+        if (c.json === true) {
+          try {
+            value = JSON.stringify(value);
+          } catch(err) {
+            throw new Error(`Invalid JSON object ${value} for field ${c.name}`);
+          }
+        }
+        return { ...p, [c.name]: value };
+      }, {});
   }
   return this;
 }
