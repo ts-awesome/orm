@@ -151,9 +151,6 @@ function values<T>(this: IBuildableValuesPartial, _: Optional<T> | ValuesBuilder
       .map(prop => this._table.fields.get(prop))
       .reduce((p: any, c: IFieldInfo) => {
         let value = c.getValue(_);
-        if (!value && c.defaults) {
-          value = c.defaults;
-        }
         if (c.json === true) {
           try {
             value = JSON.stringify(value);
