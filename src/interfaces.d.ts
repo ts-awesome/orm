@@ -10,6 +10,8 @@ export interface IFieldInfo {
     tableName: string;
     keyField: string;
   };
+  sensitive?: boolean;
+  defaults?: DbValueType;
   json?: boolean;
   getValue: (rec: any) => DbValueType;
 }

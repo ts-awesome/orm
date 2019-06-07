@@ -1,4 +1,4 @@
-import {ITableInfo, IFieldInfo, WhereBuilder, IIndexInfo} from './interfaces';
+import {ITableInfo, IFieldInfo, WhereBuilder, IIndexInfo, DbValueType} from './interfaces';
 
 function ensureTableInfo(proto: {tableInfo?: ITableInfo}): ITableInfo {
   if (!proto.tableInfo) {
@@ -43,6 +43,8 @@ interface IDBFieldMeta {
   autoIncrement?: boolean;
   readonly?: boolean;
   json?: boolean;
+  sensitive?: boolean;
+  defaults?: DbValueType;
 }
 
 export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator {
@@ -51,7 +53,7 @@ export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator {
     const {fields} = tableInfo;
 
     if (typeof fieldMeta !== 'string' && fieldMeta) {
-      let {name, primaryKey, uid, autoIncrement, readonly, json}: IDBFieldMeta = fieldMeta;
+      let {name, primaryKey, uid, autoIncrement, readonly, json, sensitive, defaults}: IDBFieldMeta = fieldMeta;
       name = name || key;
       fields.set(key, {
         name,
@@ -60,6 +62,8 @@ export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator {
         autoIncrement,
         readonly,
         json,
+        sensitive,
+        defaults,
         getValue: (rec: any) => rec[key]
       });
       if (primaryKey) {

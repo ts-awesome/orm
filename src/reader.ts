@@ -61,7 +61,9 @@ export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements I
       let propName = colPropMap[col];
       const value = row[col];
       if (propName) {
-        if (this.tableInfo.fields.get(propName)!.json === true && typeof(value) !== 'object') {
+        let {json, sensitive} = this.tableInfo.fields.get(propName)!;
+        if (sensitive) return;
+        if (json && typeof(value) !== 'object') {
           try {
             res[propName] = JSON.parse(value as any);
           } catch(err) {
