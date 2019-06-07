@@ -45,10 +45,6 @@ export type Values<T> = {
   [P in keyof T]?: IOperandable<T[P]> | T[P];
 }
 
-export type Optional<T> = {
-  [P in keyof T]?: T[P];
-}
-
 export type ColumnsList<T> = Column<T>[];
 
 export interface IOperandable<T=any> {
@@ -173,13 +169,13 @@ export type IBuildableQuery = IBuildableSelectQuery | IBuildableInsertQuery | IB
 
 export interface IWhereHandler<T> {
   where(builder: WhereBuilder<T>): this
-  where(value: Optional<T>): this
+  where(value: Partial<T>): this
   limit(limit: number): this
 }
 
 export interface IValuesHandler<T> {
   values(builder: ValuesBuilder<T>): this
-  values(values: Optional<T>): this
+  values(values: Partial<T>): this
 }
 
 export interface ISelectBuilder<T extends TableMetaProvider<InstanceType<T>>> extends IWhereHandler<InstanceType<T>>, IBuildableSelectQuery {

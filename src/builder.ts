@@ -15,7 +15,6 @@ import {
   ITableInfo,
   IUpdateBuilder, IUpsertBuilder,
   JoinBuilder,
-  Optional,
   OrderBuilder,
   TableMetaProvider,
   ValuesBuilder,
@@ -71,7 +70,7 @@ function proxy<T>({tableName, fields, primaryKey}: ITableInfo, ignoreTableName?:
   });
 }
 
-function treeOf<T>(_: Optional<T>, tableInfo: ITableInfo): any {
+function treeOf<T>(_: Partial<T>, tableInfo: ITableInfo): any {
   validateModel(_, tableInfo);
   return and(
     ...Object.keys(_)
@@ -92,7 +91,7 @@ function resolveColumn(property: string, {tableName, fields}: ITableInfo): strin
   return tableName + '.' + fields.get(property)!.name;
 }
 
-function validateModel<T>(_: Optional<T>, tableInfo: ITableInfo): void {
+function validateModel<T>(_: Partial<T>, tableInfo: ITableInfo): void {
   validateFields(Object.keys(_), tableInfo);
 }
 
@@ -104,7 +103,7 @@ function validateFields(_: string[], tableInfo: ITableInfo): void {
   });
 }
 
-function where<T>(this: IBuildableWherePartial, _: Optional<T> | WhereBuilder<T>) {
+function where<T>(this: IBuildableWherePartial, _: Partial<T> | WhereBuilder<T>) {
   const tree = typeof _ === 'function'
     ? (_ as WhereBuilder<T>)(proxy<T>(this._table))
     : treeOf(_, this._table);
@@ -141,7 +140,7 @@ function groupBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | GroupByBuil
   return this;
 }
 
-function values<T>(this: IBuildableValuesPartial, _: Optional<T> | ValuesBuilder<T>) {
+function values<T>(this: IBuildableValuesPartial, _: Partial<T> | ValuesBuilder<T>) {
   if (typeof _ === 'function') {
     this._values = (_ as ValuesBuilder<T>)(proxy<T>(this._table));
   } else {
