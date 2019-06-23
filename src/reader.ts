@@ -8,9 +8,18 @@ export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements I
     this.tableInfo = (<any>Model.prototype).tableInfo!;
   }
 
+  /**
+   * Converts IQueryData to T[] and returns first element of T[]
+   * 
+   * 
+   * @param data 
+   * @returns First element from query result
+   */
+
   readOne(data: IQueryData[]): InstanceType<T> | undefined {
     return data.length ? this.read(data[0]) : undefined;
   }
+
   readOneOrRejectNotFound(data: any[]): InstanceType<T> {
     if (data.length > 0) {
       return this.read(data[0]);
@@ -50,7 +59,7 @@ export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements I
     return count;
   }
 
-  private read(row: IQueryData): InstanceType<T> {
+  protected read(row: IQueryData): InstanceType<T> {
     let res = new this.Model();
     let colPropMap = {};
     this.tableInfo.fields.forEach(({name}, propName) => {
