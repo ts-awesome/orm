@@ -1,4 +1,4 @@
-import {ITableInfo, IFieldInfo, WhereBuilder, IIndexInfo, DbValueType} from './interfaces';
+import {ITableInfo, IFieldInfo, WhereBuilder, IIndexInfo, DbValueType, IDbField} from './interfaces';
 
 function ensureTableInfo(proto: {tableInfo?: ITableInfo}): ITableInfo {
   if (!proto.tableInfo) {
@@ -36,15 +36,13 @@ export function dbTable<T>(tableName: string, uniqueIndexes?: IDBIndexMeta<T>[])
   };
 }
 
-interface IDBFieldMeta {
+interface IDBFieldMeta extends Omit<IFieldInfo, 'getValue' | 'relatedTo' | 'name'> {
   name?: string;
+
+  /** @deprecated */
   uid?: boolean;
-  primaryKey?: boolean;
-  autoIncrement?: boolean;
-  readonly?: boolean;
+  /** @deprecated */
   json?: boolean;
-  sensitive?: boolean;
-  defaults?: DbValueType;
 }
 
 export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator {
@@ -53,18 +51,25 @@ export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator {
     const {fields} = tableInfo;
 
     if (typeof fieldMeta !== 'string' && fieldMeta) {
-      let {name, primaryKey, uid, autoIncrement, readonly, json, sensitive, defaults}: IDBFieldMeta = fieldMeta;
+      let {name, primaryKey, uid, autoIncrement, readonly, json, sensitive, defaults, kind}: IDBFieldMeta = fieldMeta;
+      if (uid) {
+        console.warn(`Flag dbField.uid is deprecated. Please use dbField.kind instead.`);
+        kind = kind || 'uuid';
+      }
+      if (json) {
+        console.warn(`Flag dbField.json is deprecated. Please use dbField.kind instead.`);
+        kind = kind || 'json';
+      }
       name = name || key;
       fields.set(key, {
         name,
-        isPrimaryKey: primaryKey,
-        uid,
+        primaryKey: primaryKey,
         autoIncrement,
         readonly,
-        json,
         sensitive,
         defaults,
-        getValue: (rec: any) => rec[key]
+        kind,
+        getValue(rec: any) { return rec[key] },
       });
       if (primaryKey) {
         tableInfo.primaryKey = name;
@@ -73,7 +78,7 @@ export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator {
     } else {
       fields.set(key, {
         name: fieldMeta || key,
-        getValue: (rec: any) => rec[key]
+        getValue(rec: any) { return rec[key] },
       });
     }
   };

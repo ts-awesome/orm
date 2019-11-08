@@ -1,19 +1,26 @@
 export type DbValueType = string | number | boolean | Date | null | undefined;
 
+export interface IDbField<T = any> {
+  readQuery?(name: string): string;
+  writeQuery?(name: string): string;
+  reader?(raw: DbValueType): T;
+  writer?(value: T): DbValueType;
+}
+
 export interface IFieldInfo {
-  isPrimaryKey?: boolean;
-  autoIncrement?: boolean;
-  uid?: boolean;
+  primaryKey?: true;
+  autoIncrement?: true;
   name: string;
-  readonly?: boolean;
+  readonly?: true;
   relatedTo?: {
     tableName: string;
     keyField: string;
   };
-  sensitive?: boolean;
+  sensitive?: true;
   defaults?: DbValueType;
-  json?: boolean;
-  getValue: (rec: any) => DbValueType;
+  kind?: IDbField | 'uuid' | 'json' | string | symbol;
+
+  getValue(rec: any): DbValueType;
 }
 
 export interface IIndexInfo<T> {
@@ -33,7 +40,7 @@ export interface ITableInfo {
 export type TableMetaProvider<T> = {
   new (...args: any[]): T
   prototype: {
-    [P in keyof T]: DbValueType | DbValueType[] | null | undefined
+    [P in keyof T]: any | any[] | null | undefined
   }
 }
 
@@ -99,20 +106,32 @@ export type Columns<T> = {
 
 export interface Order {}
 
+export interface IContainer {
+  get<T>(serviceIdentifier: string | symbol): T;
+  getTagged<T>(serviceIdentifier: string | symbol, key: string | number | symbol, value: any): T;
+  getNamed<T>(serviceIdentifier: string | symbol, named: string | number | symbol): T;
+  getAll<T>(serviceIdentifier: string | symbol): T[];
+  getAllTagged<T>(serviceIdentifier: string | symbol, key: string | number | symbol, value: any): T[];
+  getAllNamed<T>(serviceIdentifier: string | symbol, named: string | number | symbol): T[];
+}
+
 export interface IBuildableWherePartial {
   _table: ITableInfo
+  _kernel?: IContainer
   _where?: any[]
   _limit?: number
 }
 
 export interface IBuildableValuesPartial {
   _table: ITableInfo
+  _kernel?: IContainer
   _values?: any
 }
 
 interface IBuildableSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
+  _kernel?: IContainer
   _columns?: any[]
   _joins?: any[]
   _where?: any[]
@@ -126,6 +145,7 @@ interface IBuildableSelectQuery {
 export interface IBuildableSubSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
+  _kernel?: IContainer
   _columns?: any[]
   _joins?: any[]
   _where?: any[]
@@ -136,12 +156,14 @@ export interface IBuildableSubSelectQuery {
 interface IBuildableInsertQuery {
   _type: 'INSERT'
   _table: ITableInfo
+  _kernel?: IContainer
   _values?: any
 }
 
 interface IBuildableUpsertQuery {
   _type: 'UPSERT'
   _table: ITableInfo
+  _kernel?: IContainer
   _values?: any
   _where?: any[],
   _conflictExp?: {
@@ -153,6 +175,7 @@ interface IBuildableUpsertQuery {
 interface IBuildableUpdateQuery {
   _type: 'UPDATE'
   _table: ITableInfo
+  _kernel?: IContainer
   _values?: any
   _where?: any[]
   _limit?: number
@@ -161,6 +184,7 @@ interface IBuildableUpdateQuery {
 interface IBuildableDeleteQuery {
   _type: 'DELETE'
   _table: ITableInfo
+  _kernel?: IContainer
   _where?: any[]
   _limit?: number
 }
