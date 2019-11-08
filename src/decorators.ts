@@ -51,7 +51,7 @@ export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator {
     const {fields} = tableInfo;
 
     if (typeof fieldMeta !== 'string' && fieldMeta) {
-      let {name, primaryKey, uid, autoIncrement, readonly, json, sensitive, defaults, kind}: IDBFieldMeta = fieldMeta;
+      let {name, primaryKey, uid, json, kind, ...rest}: IDBFieldMeta = fieldMeta;
       if (uid) {
         console.warn(`Flag dbField.uid is deprecated. Please use dbField.kind instead.`);
         kind = kind || 'uuid';
@@ -62,12 +62,9 @@ export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator {
       }
       name = name || key;
       fields.set(key, {
+        ...rest,
         name,
-        primaryKey: primaryKey,
-        autoIncrement,
-        readonly,
-        sensitive,
-        defaults,
+        primaryKey,
         kind,
         getValue(rec: any) { return rec[key] },
       });

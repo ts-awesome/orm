@@ -1,12 +1,12 @@
 # ts-orm
 
 ## @dbTable(
-  * **tableName**: *string* - Table name
-  * **uniqueIndexes?[]** - Array of uniqueIndexes meta
-    * **name**: *string* - Index name
-    * **fields**: *string[]* - Array of field related to index
-    * **default?**: *boolean* - Determines used that index as a default in query like upsert
-    * **where?**: *WhereBuilder* - Where condition that used in upsert query (This is specific for postgres db)
+  * **`tableName`**: *`string`* - Table name
+  * **`uniqueIndexes?[]`** - Array of uniqueIndexes meta
+    * **`name`**: *`string`* - Index name
+    * **`fields`**: *`string[]`* - Array of field related to index
+    * **`default?`**: *`boolean`* - Determines used that index as a default in query like upsert
+    * **`where?`**: *WhereBuilder* - Where condition that used in upsert query (This is specific for postgres db)
 
 )
 
@@ -15,7 +15,7 @@
   * **`primaryKey?`**: *`true`* - Is field primary key or not (*false by default*).
   * **`readonly?`**: *`true`* - Is field readonly (*false by default*).
   * **`autoIncrement?`**: *`true`* - Is field auto increment (*false by default*).
-  * **`defaults?`**: *`T | DbDefault`* - Field has default value. Specify value or indicate db column has default with DbDefault
+  * **`default?`**: *`T | DbDefault`* - Field has default value. Specify value or indicate db column has default with DbDefault
   * **`sensitive?`**: *`true`* - Fields contains sensitive data and will be masked with undefined (*false by default*)
   * **`kind?`**: *`IDbField | uuid | json | string | symbol`* - Field parser/serializer options
 
