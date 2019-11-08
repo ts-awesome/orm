@@ -1,5 +1,7 @@
-export const DbFieldSymbolSymbol = Symbol.for('DbFieldSymbol');
+export const DbFieldSymbol = Symbol.for('DbField');
 
-export default {
-  DbFieldSymbol: DbFieldSymbolSymbol,
-}
+export const Symbols = {
+  DbField: DbFieldSymbol,
+};
+
+export default Symbols;

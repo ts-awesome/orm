@@ -11,19 +11,73 @@
 )
 
 ## @dbField({
-  * **name?**: *string* - Field name. Use model property name by default.
-  * **primaryKey?**: *boolean* - Is field primary key or not (*false by default*).
-  * **readonly?**: *boolean* - Is field readonly (*false by default*).
-  * **autoIncrement?**: *boolean* - Is field auto increment (*false by default*).
-  * **default?**: *T | DbDefault* - Field has default value. Specify value or indicate db column has default with DbDefault
-  * **sensitive?**: *boolean* - Fields contains sensitive data and will be masked with undefined (*false by default*)
-  * **kind?**: *IDbField | uuid | json | custom* - Field parser/serializer options
+  * **`name?`**: *`string`* - Field name. Use model property name by default.
+  * **`primaryKey?`**: *`true`* - Is field primary key or not (*false by default*).
+  * **`readonly?`**: *`true`* - Is field readonly (*false by default*).
+  * **`autoIncrement?`**: *`true`* - Is field auto increment (*false by default*).
+  * **`defaults?`**: *`T | DbDefault`* - Field has default value. Specify value or indicate db column has default with DbDefault
+  * **`sensitive?`**: *`true`* - Fields contains sensitive data and will be masked with undefined (*false by default*)
+  * **`kind?`**: *`IDbField | uuid | json | string | symbol`* - Field parser/serializer options
+
 })
 
 ## @dbManyField({
-  * **table**: *string | TableClass* - Name of related table.
-  * **keyField**: *string* - Field from **table** that is matched with this table's primary key.
-  * **valueField**: *string* - Related table's field that is used as a source of values.
+  * **`table`**: *`string | TableClass`* - Name of related table.
+  * **`keyField`**: *`string`* - Field from **table** that is matched with this table's primary key.
+  * **`valueField`**: *`string`* - Related table's field that is used as a source of values.
 
 })
 
+## Example
+
+```ts
+@dbTable("user")
+export class UserModel {
+
+  @dbField({
+    autoIncrement: true,
+    primaryKey: true,
+    name: "id"
+  })
+  id: number;
+
+  @dbField({
+    kind: 'uuid',
+  })
+  uid: string;
+
+  @dbField("username")
+  userName: string;
+
+  @dbField({
+    sensetive: true,
+  })
+  password: string;
+
+  @dbField()
+  email?: string | null;
+
+  @dbField()
+  type?: UserType;
+
+  @dbField({
+    name: 'creationdate',
+    readonly: true,
+  })
+  creationDate?: Date;
+
+  @dbField({
+    name: 'lastmodified',
+    readonly: true,
+  })
+  lastModified?: Date;
+
+  @dbManyField({
+    table: 'user_bus',
+    keyField: 'userId',
+    valueField: 'busId',
+  })
+  busIds?: number[];
+}
+
+```

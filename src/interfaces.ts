@@ -128,7 +128,7 @@ export interface IBuildableValuesPartial {
   _values?: any
 }
 
-interface IBuildableSelectQuery {
+export interface IBuildableSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
   _kernel?: IContainer
@@ -153,14 +153,14 @@ export interface IBuildableSubSelectQuery {
   _having?: any[]
 }
 
-interface IBuildableInsertQuery {
+export interface IBuildableInsertQuery {
   _type: 'INSERT'
   _table: ITableInfo
   _kernel?: IContainer
   _values?: any
 }
 
-interface IBuildableUpsertQuery {
+export interface IBuildableUpsertQuery {
   _type: 'UPSERT'
   _table: ITableInfo
   _kernel?: IContainer
@@ -172,7 +172,7 @@ interface IBuildableUpsertQuery {
   },
 }
 
-interface IBuildableUpdateQuery {
+export interface IBuildableUpdateQuery {
   _type: 'UPDATE'
   _table: ITableInfo
   _kernel?: IContainer
@@ -181,7 +181,7 @@ interface IBuildableUpdateQuery {
   _limit?: number
 }
 
-interface IBuildableDeleteQuery {
+export interface IBuildableDeleteQuery {
   _type: 'DELETE'
   _table: ITableInfo
   _kernel?: IContainer
