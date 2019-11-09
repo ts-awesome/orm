@@ -244,13 +244,13 @@ export interface IDbDataReader<T> {
   readCount(data: ICountData[]): number;
 }
 
-export interface ISqlTransaction<TQuery> extends IQueryExecutor<TQuery> {
+export interface ITransaction<TQuery> extends IQueryExecutor<TQuery> {
   readonly finished: boolean;
   commit(): Promise<void>;
   rollback(): Promise<void>;
 }
 
-export interface ISqlDataDriver<TQuery> extends IQueryExecutor<TQuery> {
-  begin(): Promise<ISqlTransaction<TQuery>>;
+export interface IQueryDataDriver<TQuery> extends IQueryExecutor<TQuery> {
+  begin(): Promise<ITransaction<TQuery>>;
   end(): Promise<void>;
 }

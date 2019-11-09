@@ -79,5 +79,15 @@ export class UserModel {
   })
   busIds?: number[];
 }
+```
 
+### Setup your container and bindings with `@viatsyshyn/ts-orm-pg`
+
+```ts
+    [
+        UserModel
+    ].forEach(Model => {
+        container.bind<IDbDataReader<any>>(Symbols.dbReaderFor(Model))
+          .toConstantValue(new DbReader<any>(Model));
+        });
 ```
