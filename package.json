@@ -6,11 +6,11 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build:dev": "tsc",
-    "build": "tsc && cp src/wrappers* dist/src/ && cp src/interfaces.d.ts dist/src/",
+    "build": "tsc && cp src/wrappers* dist/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
-    "typescript": "^3.3.3"
+    "typescript": "^3.7.2"
   },
   "author": "Volodymyr Iatsyshyn <viatsyshyn@gmail.com>",
   "license": "ISC"

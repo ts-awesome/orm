@@ -1,18 +1,19 @@
-import {IDbDataReader, ICountData, IQueryData, ITableInfo, TableMetaProvider} from "./interfaces";
+import {IDbDataReader, ICountData, IQueryData, ITableInfo, TableMetaProvider, IDbField, IContainer} from "./interfaces";
 import {NotFoundError} from "./errors";
+import {DbFieldSymbol} from "./symbols";
 
 export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements IDbDataReader<InstanceType<T>> {
   private tableInfo: ITableInfo;
 
-  constructor(private Model: T) {
+  constructor(private Model: T, private kernel?: IContainer) {
     this.tableInfo = (<any>Model.prototype).tableInfo!;
   }
 
   /**
    * Converts IQueryData to T[] and returns first element of T[]
-   * 
-   * 
-   * @param data 
+   *
+   *
+   * @param data
    * @returns First element from query result
    */
 
@@ -69,26 +70,37 @@ export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements I
     Object.keys(row).forEach(col => {
       let propName = colPropMap[col];
       const value = row[col];
-      if (propName) {
-        let {json, sensitive} = this.tableInfo.fields.get(propName)!;
-        if (sensitive) return;
-        if (json && typeof(value) !== 'object') {
-          try {
-            res[propName] = JSON.parse(value as any);
-          } catch(err) {
-            throw new Error(`Invalid JSON value ${JSON.stringify(value, null, 2)} in colument ${col}`);
-          }
-        } else {
-          res[propName] = value;
-        }
-      } else {
+      if (!propName) {
         res[col] = value;
+        return;
       }
-    });
 
-    // this.tableInfo.fields.forEach(({name}, propName) => {
-    //   res[propName] = row[name];
-    // });
+      const {kind, sensitive} = this.tableInfo.fields.get(propName)!;
+
+      /* No way to read sensitive data ATM */
+      if (sensitive) return;
+
+      if (!kind) {
+        res[propName] = value;
+      }
+
+      let dbField: IDbField = kind as any;
+      if (typeof kind === 'string' || typeof kind === 'symbol') {
+        if (!this.kernel) {
+          throw new Error(`Container is not provided`);
+        }
+
+        dbField = this.kernel.getNamed(DbFieldSymbol, kind);
+
+        if (!dbField) {
+          throw new Error(`Can't resolve IDbField data for kind: ${JSON.stringify(kind)}`);
+        }
+      }
+
+      const {reader = (x: any) => x} = dbField;
+
+      res[propName] = reader(value as any);
+    });
 
     return res;
   }
