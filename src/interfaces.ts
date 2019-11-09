@@ -233,7 +233,7 @@ export type ICountData = { [key: string]: number};
 export type IQueryData = {[key: string]: DbValueType}
 
 export interface IQueryExecutor<T> {
-  execute(sqlQuery: T): Promise<IQueryData[]>;
+  execute(query: T): Promise<IQueryData[]>;
 }
 
 export interface IDbDataReader<T> {
@@ -250,7 +250,7 @@ export interface ITransaction<TQuery> extends IQueryExecutor<TQuery> {
   rollback(): Promise<void>;
 }
 
-export interface IQueryDataDriver<TQuery> extends IQueryExecutor<TQuery> {
+export interface IQueryDriver<TQuery> extends IQueryExecutor<TQuery> {
   begin(): Promise<ITransaction<TQuery>>;
   end(): Promise<void>;
 }

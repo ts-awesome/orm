@@ -84,10 +84,19 @@ export class UserModel {
 ### Setup your container and bindings with `@viatsyshyn/ts-orm-pg`
 
 ```ts
-    [
-        UserModel
-    ].forEach(Model => {
-        container.bind<IDbDataReader<any>>(Symbols.dbReaderFor(Model))
-          .toConstantValue(new DbReader<any>(Model));
-        });
+container.bind<pg.Pool>(Symbol.for('PgPool'))
+  .toConstantValue(new pg.Pool({})); // TODO: provide db config
+
+container
+  .bind<IBuildableQueryCompiler<ISqlQuery>>(Symbols.SqlQueryCompiler)
+  .to(PgCompiler);
+
+container.bind<IQueryDriver<ISqlQuery>>(Symbols.SqlQueryDriver)
+  .toDynamicValue(({container}: interfaces.Context) => {
+    return new PgDriver(container.get<pg.Pool>(Symbol.for('PgPool')));
+  });
+
+container
+  .bind<IDbDataReader<UserModel>>(Symbols.dbReaderFor(UserModel))
+  .toConstantValue(new DbReader<UserModel>(UserModel));
 ```
