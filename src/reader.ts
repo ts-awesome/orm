@@ -82,6 +82,7 @@ export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements I
 
       if (!kind) {
         res[propName] = value;
+        return ;
       }
 
       let dbField: IDbField = kind as any;
@@ -97,7 +98,7 @@ export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements I
         }
       }
 
-      const {reader = (x: any) => x} = dbField;
+      const {reader = (x: any) => x} = dbField || {};
 
       res[propName] = reader(value as any);
     });
