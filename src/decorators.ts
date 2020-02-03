@@ -19,7 +19,7 @@ interface IDBIndexMeta<T> {
   where?: WhereBuilder<T>;
 }
 
-export function dbTable(target: any, key: string): void;
+export function dbTable<TFunction extends Function>(target: TFunction): TFunction | void;
 export function dbTable<T>(tableName?: string, uniqueIndexes?: IDBIndexMeta<T>[]): ClassDecorator;
 export function dbTable<T>(...args: any): ClassDecorator {
   if (args.length > 1 && typeof args[1] === 'string') {
