@@ -22,18 +22,19 @@ interface IDBIndexMeta<T> {
 export function dbTable<TFunction extends Function>(target: TFunction): TFunction | void;
 export function dbTable<T>(tableName?: string, uniqueIndexes?: IDBIndexMeta<T>[]): ClassDecorator;
 export function dbTable<T>(...args: any): ClassDecorator {
-  if (args.length > 1 && typeof args[1] === 'string') {
+  let tableName, uniqueIndexes;
+  if (args.length > 0 && typeof args[0] === 'function') {
     // @ts-ignore
     return validator(...args);
   }
 
-  let [tableName, uniqueIndexes] = args;
-  return function validator <TFunction extends Function>(target: TFunction): TFunction | void {
+  [tableName, uniqueIndexes] = args;
+  return validator;
+
+  function validator <TFunction extends Function>(target: TFunction): TFunction | void {
     const tableInfo = ensureTableInfo(target.prototype);
     tableInfo.tableName = tableName ?? target.name
       .replace(/Model$/, '')
-      .replace(/ies$/, 'y')
-      .replace(/s$/, '')
       .toLowerCase();
     if (uniqueIndexes) {
       uniqueIndexes.forEach(ui => {
@@ -60,13 +61,16 @@ interface IDBFieldMeta extends Omit<IFieldInfo, 'getValue' | 'relatedTo' | 'name
 export function dbField(target: any, key: string): void;
 export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator;
 export function dbField(...args: any): PropertyDecorator {
+  let fieldMeta;
   if (args.length > 1 && typeof args[1] === 'string') {
     // @ts-ignore
     return validator(...args);
   }
 
-  let [fieldMeta] = args;
-  return function validator (target: Object, key: string | symbol): void {
+  [fieldMeta] = args;
+  return validator;
+
+  function validator(target: Object, key: string | symbol): void {
     const tableInfo = ensureTableInfo(target.constructor.prototype);
     const {fields} = tableInfo;
 
