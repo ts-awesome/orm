@@ -1,4 +1,4 @@
-import {ITableInfo, IFieldInfo, WhereBuilder, IIndexInfo, DbValueType, IDbField} from './interfaces';
+import {ITableInfo, IFieldInfo, WhereBuilder} from './interfaces';
 
 function ensureTableInfo(proto: {tableInfo?: ITableInfo}): ITableInfo {
   if (!proto.tableInfo) {
@@ -19,10 +19,22 @@ interface IDBIndexMeta<T> {
   where?: WhereBuilder<T>;
 }
 
-export function dbTable<T>(tableName: string, uniqueIndexes?: IDBIndexMeta<T>[]): ClassDecorator {
-  return function <TFunction extends Function>(target: TFunction) {
+export function dbTable(target: any, key: string): void;
+export function dbTable<T>(tableName?: string, uniqueIndexes?: IDBIndexMeta<T>[]): ClassDecorator;
+export function dbTable<T>(...args: any): ClassDecorator {
+  if (args.length > 1 && typeof args[1] === 'string') {
+    // @ts-ignore
+    return validator(...args);
+  }
+
+  let [tableName, uniqueIndexes] = args;
+  return function validator <TFunction extends Function>(target: TFunction) {
     const tableInfo = ensureTableInfo(target.prototype);
-    tableInfo.tableName = tableName;
+    tableInfo.tableName = tableName ?? target.name
+      .replace(/Model$/, '')
+      .replace(/ies$/, 'y')
+      .replace(/s$/, '')
+      .toLowerCase();
     if (uniqueIndexes) {
       uniqueIndexes.forEach(ui => {
         tableInfo.indexes!.push({
@@ -45,22 +57,30 @@ interface IDBFieldMeta extends Omit<IFieldInfo, 'getValue' | 'relatedTo' | 'name
   json?: boolean;
 }
 
-export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator {
-  return function (target: Object, key: string) {
+export function dbField(target: any, key: string): void;
+export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator;
+export function dbField(...args: any): PropertyDecorator {
+  if (args.length > 1 && typeof args[1] === 'string') {
+    // @ts-ignore
+    return validator(...args);
+  }
+
+  let [fieldMeta] = args;
+  return function validator (target: Object, key: string | symbol): void {
     const tableInfo = ensureTableInfo(target.constructor.prototype);
     const {fields} = tableInfo;
 
     if (typeof fieldMeta !== 'string' && fieldMeta) {
       let {name, primaryKey, uid, json, kind, ...rest}: IDBFieldMeta = fieldMeta;
       if (uid) {
-        console.warn(`Flag dbField.uid is deprecated. Please use dbField.kind instead.`);
+        // console.warn(`Flag dbField.uid is deprecated. Please use dbField.kind instead.`);
         kind = kind || 'uuid';
       }
       if (json) {
-        console.warn(`Flag dbField.json is deprecated. Please use dbField.kind instead.`);
+        // console.warn(`Flag dbField.json is deprecated. Please use dbField.kind instead.`);
         kind = kind || 'json';
       }
-      name = name || key;
+      name = name ?? (typeof key === 'string' ? key : key.toString());
       fields.set(key, {
         ...rest,
         name,
@@ -88,7 +108,7 @@ interface IDBManyFieldMeta {
 }
 
 export function dbManyField(fieldMeta: IDBManyFieldMeta): PropertyDecorator {
-  return function (target: Object, key: string): void {
+  return function (target: Object, key: string | symbol): void {
     const {fields} = ensureTableInfo(target.constructor.prototype);
     let {valueField, keyField, table}: IDBManyFieldMeta = fieldMeta;
     fields.set(key, {

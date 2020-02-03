@@ -93,7 +93,7 @@ function columnsOf<T>(_: ColumnsList<T>, {tableName, fields}: ITableInfo, _kerne
 
 function resolveColumn(property: string, {tableName, fields}: ITableInfo, _kernel?: IContainer): string {
 
-  let wrapper = undefined;
+  let wrapper: ((a: string) => string) | undefined = undefined;
   const info = fields.get(property);
   if (info) {
     const {kind} = info;
@@ -118,7 +118,7 @@ function resolveColumn(property: string, {tableName, fields}: ITableInfo, _kerne
 
   const name = tableName + '.' + fields.get(property)!.name;
 
-  return wrapper ? wrapper(name) : name;
+  return typeof wrapper === 'function' ? wrapper(name) : name;
 }
 
 function validateModel<T>(_: Partial<T>, tableInfo: ITableInfo): void {
@@ -177,7 +177,7 @@ function values<T>(this: IBuildableValuesPartial, _: Partial<T> | ValuesBuilder<
     validateModel(_, this._table);
     this._values = Object
       .keys(_)
-      .map(prop => this._table.fields.get(prop))
+      .map(prop => this._table.fields.get(prop)!)
       .reduce((p: any, {getValue, kind, name}: IFieldInfo) => {
         let value = getValue(_);
         let wrapper: any  = undefined;

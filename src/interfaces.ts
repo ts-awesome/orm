@@ -33,7 +33,7 @@ export interface IIndexInfo<T> {
 export interface ITableInfo {
   tableName: string;
   primaryKey?: string;
-  fields: Map<string, IFieldInfo>;
+  fields: Map<string | symbol, IFieldInfo>;
   indexes?: IIndexInfo<any>[];
 }
 
