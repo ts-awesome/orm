@@ -36,17 +36,15 @@ export function dbTable<T>(...args: any): ClassDecorator {
     tableInfo.tableName = tableName ?? target.name
       .replace(/Model$/, '')
       .toLowerCase();
-    if (uniqueIndexes) {
-      uniqueIndexes.forEach(ui => {
-        tableInfo.indexes!.push({
-          name: ui.name,
-          keyFields: ui.fields,
-          where: ui.where,
-          default: ui.default || false,
-        });
+    uniqueIndexes?.forEach(ui => {
+      tableInfo.indexes!.push({
+        name: ui.name,
+        keyFields: ui.fields,
+        where: ui.where,
+        default: ui.default || false,
       });
-    }
-  };
+    });
+  }
 }
 
 interface IDBFieldMeta extends Omit<IFieldInfo, 'getValue' | 'relatedTo' | 'name'> {
@@ -102,7 +100,7 @@ export function dbField(...args: any): PropertyDecorator {
         getValue(rec: any) { return rec[key] },
       });
     }
-  };
+  }
 }
 
 interface IDBManyFieldMeta {
