@@ -81,7 +81,7 @@ export function dbField(...args: any): PropertyDecorator {
         kind = kind || 'json';
       }
       name = name ?? (typeof key === 'string' ? key : key.toString());
-      fields.set(key, {
+      fields.set(key.toString(), {
         ...rest,
         name,
         primaryKey,
@@ -93,7 +93,7 @@ export function dbField(...args: any): PropertyDecorator {
       }
 
     } else {
-      fields.set(key, {
+      fields.set(key.toString(), {
         name: fieldMeta || key,
         getValue(rec: any) { return rec[key] },
       });
@@ -111,7 +111,7 @@ export function dbManyField(fieldMeta: IDBManyFieldMeta): PropertyDecorator {
   return function (target: Object, key: string | symbol): void {
     const {fields} = ensureTableInfo(target.constructor.prototype);
     let {valueField, keyField, table}: IDBManyFieldMeta = fieldMeta;
-    fields.set(key, {
+    fields.set(key.toString(), {
       name: valueField,
       relatedTo: {
         keyField,
