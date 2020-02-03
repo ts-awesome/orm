@@ -28,7 +28,7 @@ export function dbTable<T>(...args: any): ClassDecorator {
   }
 
   let [tableName, uniqueIndexes] = args;
-  return function validator <TFunction extends Function>(target: TFunction) {
+  return function validator <TFunction extends Function>(target: TFunction): TFunction | void {
     const tableInfo = ensureTableInfo(target.prototype);
     tableInfo.tableName = tableName ?? target.name
       .replace(/Model$/, '')
