@@ -69,7 +69,7 @@ export interface IOperandable<T=any> {
 
 type ElementType<T> = T extends any[] ? T[number] : T;
 export interface IOperandable<T> {
-  in(value: T[] | IOperandable<T[]>): boolean;
+  in(value: T[] | Iterable<T> | IOperandable<T[]>): boolean;
   has(value: ElementType<T> | IOperandable<ElementType<T>>): boolean
 }
 
@@ -202,6 +202,10 @@ export interface IValuesHandler<T> {
   values(values: Partial<T>): this
 }
 
+export interface ITableRef<T extends TableMetaProvider<InstanceType<T>>> extends ITableInfo {
+  readonly originalTableName: string;
+}
+
 export interface ISelectBuilder<T extends TableMetaProvider<InstanceType<T>>> extends IWhereHandler<InstanceType<T>>, IBuildableSelectQuery {
   columns(builder: ColumnsBuilder<InstanceType<T>>): this
   columns(list: ColumnsList<InstanceType<T>>): this
@@ -211,9 +215,13 @@ export interface ISelectBuilder<T extends TableMetaProvider<InstanceType<T>>> ex
   orderBy(list: ColumnsList<InstanceType<T>>): this
   having(builder: HavingBuilder<InstanceType<T>>): this
   join<X extends TableMetaProvider<InstanceType<X>>>(Model: X, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
+  join<X extends TableMetaProvider<InstanceType<X>>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
   joinLeft<X extends TableMetaProvider<InstanceType<X>>>(Model: X, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
+  joinLeft<X extends TableMetaProvider<InstanceType<X>>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
   joinRight<X extends TableMetaProvider<InstanceType<X>>>(Model: X, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
+  joinRight<X extends TableMetaProvider<InstanceType<X>>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
   joinFull<X extends TableMetaProvider<InstanceType<X>>>(Model: X, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
+  joinFull<X extends TableMetaProvider<InstanceType<X>>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
   offset(offset: number): this
 }
 
