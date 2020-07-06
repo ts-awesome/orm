@@ -7,11 +7,14 @@
   "scripts": {
     "build:dev": "tsc --project tsconfig.json",
     "build": "npm run build:dev && cp src/wrappers* dist/",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "devDependencies": {
     "typescript": "^3.7.5"
   },
   "author": "Volodymyr Iatsyshyn <viatsyshyn@gmail.com>",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "jest": "^26.1.0"
+  }
 }
