@@ -1,11 +1,11 @@
 const {SupportedOperations, Operandable} = require("../src/wrappers");
 
-describe('Operators should return correct intermediate query', () => {
+describe('Operations should return correct intermediate query', () => {
 
     const thisData = [1, 2, 3, 4, 5];
     const givenValue = 5;
 
-    it('Equal operator', () => {
+    it('Equal operation', () => {
         const result = SupportedOperations.eq.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -13,7 +13,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('Not equal operator', () => {
+    it('Not equal operation', () => {
         const result = SupportedOperations.neq.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -21,7 +21,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('LIKE operator', () => {
+    it('LIKE operation', () => {
         const result = SupportedOperations.like.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -29,7 +29,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('IN operator', () => {
+    it('IN operation', () => {
         const result = SupportedOperations.in.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -37,7 +37,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('HAS operator', () => {
+    it('HAS operation', () => {
         const result = SupportedOperations.has.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -45,7 +45,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([givenValue, thisData]);
     });
 
-    it('BETWEEN operator', () => {
+    it('BETWEEN operation', () => {
         const lowerGivenValue = 5;
         const highGivenValue = 10;
         const result = SupportedOperations.between.call(thisData, lowerGivenValue, highGivenValue);
@@ -55,7 +55,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, lowerGivenValue, highGivenValue]);
     });
 
-    it('GREATER THAN operator', () => {
+    it('GREATER THAN operation', () => {
         const result = SupportedOperations.gt.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -63,7 +63,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('GREATER THAN EQUAL operator', () => {
+    it('GREATER THAN EQUAL operation', () => {
         const result = SupportedOperations.gte.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -71,7 +71,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('LOWER THAN operator', () => {
+    it('LOWER THAN operation', () => {
         const result = SupportedOperations.lt.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -79,7 +79,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('LOWER THAN EQUAL operator', () => {
+    it('LOWER THAN EQUAL operation', () => {
         const result = SupportedOperations.lte.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -87,7 +87,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('ADD operator', () => {
+    it('ADD operation', () => {
         const result = SupportedOperations.add.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -95,7 +95,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('SUBTRACTION operator', () => {
+    it('SUBTRACTION operation', () => {
         const result = SupportedOperations.sub.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -103,7 +103,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('MULTIPLY operator', () => {
+    it('MULTIPLY operation', () => {
         const result = SupportedOperations.mul.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -111,7 +111,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('DIVISION operator', () => {
+    it('DIVISION operation', () => {
         const result = SupportedOperations.div.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -119,7 +119,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('MODULO operator', () => {
+    it('MODULO operation', () => {
         const result = SupportedOperations.mod.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -127,7 +127,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('AND operator', () => {
+    it('AND operation', () => {
         const result = SupportedOperations.and.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -135,7 +135,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('OR operator', () => {
+    it('OR operation', () => {
         const result = SupportedOperations.or.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -143,7 +143,7 @@ describe('Operators should return correct intermediate query', () => {
         expect(result._operands).toStrictEqual([thisData, givenValue]);
     });
 
-    it('XOR operator', () => {
+    it('XOR operation', () => {
         const result = SupportedOperations.xor.call(thisData, givenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -152,13 +152,13 @@ describe('Operators should return correct intermediate query', () => {
     });
 });
 
-describe('Operators should return correct intermediate query if given value is subquery', () => {
+describe('Operations should return correct intermediate query if given value is subquery', () => {
 
     const thisData = [1, 2, 3, 4, 5];
     const givenValue = 5;
     const subQueryGivenValue = SupportedOperations.eq.call(thisData, givenValue);
 
-    it('Equal operator', () => {
+    it('Equal operation', () => {
         const result = SupportedOperations.eq.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -167,7 +167,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('Not equal operator', () => {
+    it('Not equal operation', () => {
         const result = SupportedOperations.eq.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -176,7 +176,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('LIKE operator', () => {
+    it('LIKE operation', () => {
         const result = SupportedOperations.like.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -185,7 +185,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('IN operator', () => {
+    it('IN operation', () => {
         const result = SupportedOperations.in.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -194,7 +194,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('HAS operator', () => {
+    it('HAS operation', () => {
         const result = SupportedOperations.has.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -203,7 +203,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([subQueryGivenValue, thisData]);
     });
 
-    it('BETWEEN operator', () => {
+    it('BETWEEN operation', () => {
         const result = SupportedOperations.between.call(thisData, subQueryGivenValue, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -213,7 +213,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue, subQueryGivenValue]);
     });
 
-    it('GREATER THAN operator', () => {
+    it('GREATER THAN operation', () => {
         const result = SupportedOperations.gt.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -222,7 +222,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('GREATER THAN EQUAL operator', () => {
+    it('GREATER THAN EQUAL operation', () => {
         const result = SupportedOperations.gte.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -231,7 +231,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('LOWER THAN operator', () => {
+    it('LOWER THAN operation', () => {
         const result = SupportedOperations.lt.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -240,7 +240,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('LOWER THAN EQUAL operator', () => {
+    it('LOWER THAN EQUAL operation', () => {
         const result = SupportedOperations.lte.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -249,7 +249,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('ADD operator', () => {
+    it('ADD operation', () => {
         const result = SupportedOperations.add.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -258,7 +258,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('SUBTRACTION operator', () => {
+    it('SUBTRACTION operation', () => {
         const result = SupportedOperations.sub.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -267,7 +267,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('MULTIPLY operator', () => {
+    it('MULTIPLY operation', () => {
         const result = SupportedOperations.mul.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -276,7 +276,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('DIVISION operator', () => {
+    it('DIVISION operation', () => {
         const result = SupportedOperations.div.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -285,7 +285,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('MODULO operator', () => {
+    it('MODULO operation', () => {
         const result = SupportedOperations.mod.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -294,7 +294,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('AND operator', () => {
+    it('AND operation', () => {
         const result = SupportedOperations.and.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -303,7 +303,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('OR operator', () => {
+    it('OR operation', () => {
         const result = SupportedOperations.or.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -312,7 +312,7 @@ describe('Operators should return correct intermediate query if given value is s
         expect(result._operands).toStrictEqual([thisData, subQueryGivenValue]);
     });
 
-    it('XOR operator', () => {
+    it('XOR operation', () => {
         const result = SupportedOperations.xor.call(thisData, subQueryGivenValue);
 
         expect(result).toBeInstanceOf(Operandable);
@@ -322,11 +322,11 @@ describe('Operators should return correct intermediate query if given value is s
     });
 });
 
-describe('Operators should correct process null value', () => {
+describe('Operations should correct process null value', () => {
 
     const thisData = [1, 2, 3, 4, 5];
 
-    it('Equal operator', () => {
+    it('Equal operation', () => {
         const givenValue = null;
         const result = SupportedOperations.eq.call(thisData, givenValue);
 
@@ -335,7 +335,7 @@ describe('Operators should correct process null value', () => {
         expect(result._operands).toStrictEqual([thisData, 'NULL']);
     });
 
-    it('A non-equal operator', () => {
+    it('A non-equal operation', () => {
         const givenValue = null;
         const result = SupportedOperations.neq.call(thisData, givenValue);
 
