@@ -1,3 +1,5 @@
+import { whereOperators } from './intermediate';
+
 export type DbValueType = string | number | boolean | Date | null | undefined;
 
 export interface IDbField<T = any> {
@@ -134,7 +136,7 @@ export interface IBuildableSelectQuery {
   _kernel?: IContainer
   _columns?: any[]
   _joins?: any[]
-  _where?: any[]
+  _where?: whereOperators[]
   _groupBy?: any[]
   _having?: any[]
   _orderBy?: any[]
@@ -148,7 +150,7 @@ export interface IBuildableSubSelectQuery {
   _kernel?: IContainer
   _columns?: any[]
   _joins?: any[]
-  _where?: any[]
+  _where?: whereOperators[]
   _groupBy?: any[]
   _having?: any[]
 }
@@ -165,7 +167,7 @@ export interface IBuildableUpsertQuery {
   _table: ITableInfo
   _kernel?: IContainer
   _values?: any
-  _where?: any[],
+  _where?: whereOperators[]
   _conflictExp?: {
     _columns: string[],
     _where?: any[]
@@ -177,7 +179,7 @@ export interface IBuildableUpdateQuery {
   _table: ITableInfo
   _kernel?: IContainer
   _values?: any
-  _where?: any[]
+  _where?: whereOperators[]
   _limit?: number
 }
 
@@ -185,7 +187,7 @@ export interface IBuildableDeleteQuery {
   _type: 'DELETE'
   _table: ITableInfo
   _kernel?: IContainer
-  _where?: any[]
+  _where?: whereOperators[]
   _limit?: number
 }
 
