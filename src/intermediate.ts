@@ -1,28 +1,49 @@
-import { Column } from './interfaces';
+import { IBuildableSubSelectQuery, ITableInfo } from './interfaces';
 
-export interface IBinaryOperators {
+export interface IUnaryOperation {
+  _operator: '!';
+  _operands: [IExpression];
+}
+
+export interface IBinaryOperation {
+  _operator: '=' | '>' | '<' | '>=' | '<=' | '<>' | 'LIKE' | '+' | '-' | '*' | '/' | '%' | 'IN' | 'ANY' | 'ALL';
+  _operands: [IExpression, IExpression];
+}
+
+interface ITernaryOperation {
+  _operator: 'BETWEEN';
+  _operands: [IExpression, IExpression, IExpression];
+}
+
+interface IMultiOperation {
   _operator: '&' | '|' | '^';
-  _operands: [any, any]
+  _operands: IExpression[];
 }
 
-export interface ILogicalOperators {
-  _operator: 'IN' | 'BETWEEN' | 'LIKE';
-  _operands: [any, any]
+export interface IFunctionCallOperation {
+  _func: 'AVG' | 'SUM' | 'COUNT' | 'MAX' | 'MIN';
+  _args: IExpression[];
 }
 
-export interface IComparisonOperators {
-  _operator: '=' | '>' | '<' | '>=' | '<=' | '<>';
-  _operands: [any, any]
+export interface IReference {
+  _column: string;
 }
 
-export interface IArithmeticOperators {
-  _operator: '+' | '-' | '*' | '/' | '%';
-  _operands: [any, any]
+export type IExpression = IFunctionCallOperation | IReference | IMultiOperation | ITernaryOperation | IBinaryOperation | IUnaryOperation | IBuildableSubSelectQuery | IAlias | 'NULL' | '*';
+export type IColumn = IFunctionCallOperation | IReference | IAlias | '*';
+
+export interface IOrderBy {
+  _column: string;
+  _order: 'ASC' | 'DESC';
 }
 
-export type whereOperators = IComparisonOperators & ILogicalOperators;
+export interface IJoin {
+  _table: ITableInfo;
+  _condition: IExpression;
+  _type: 'INNER' | 'LEFT' | 'RIGHT' | 'FULL OUTER';
+  _alias: string | undefined;
+}
 
-export interface IOrder<T> {
-  _column: Column<T>;
-  _order: 'ASC' | 'DESC'
+export interface IAlias {
+  _alias: string;
 }

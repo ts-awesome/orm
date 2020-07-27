@@ -1,4 +1,4 @@
-import { whereOperators } from './intermediate';
+import { IColumn, IExpression, IJoin, IOrderBy, IReference } from './intermediate';
 
 export type DbValueType = string | number | boolean | Date | null | undefined;
 
@@ -134,12 +134,12 @@ export interface IBuildableSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
   _kernel?: IContainer
-  _columns?: any[]
-  _joins?: any[]
-  _where?: whereOperators[]
-  _groupBy?: any[]
-  _having?: any[]
-  _orderBy?: any[]
+  _columns?: IColumn[]
+  _joins?: IJoin[]
+  _where?: IExpression[]
+  _groupBy?: IReference[]
+  _having?: IExpression[]
+  _orderBy?: IOrderBy[]
   _limit?: number
   _offset?: number
 }
@@ -149,10 +149,10 @@ export interface IBuildableSubSelectQuery {
   _table: ITableInfo
   _kernel?: IContainer
   _columns?: any[]
-  _joins?: any[]
-  _where?: whereOperators[]
-  _groupBy?: any[]
-  _having?: any[]
+  _joins?: IJoin[]
+  _where?: IExpression[]
+  _groupBy?: IReference[]
+  _having?: IExpression[]
 }
 
 export interface IBuildableInsertQuery {
@@ -167,7 +167,7 @@ export interface IBuildableUpsertQuery {
   _table: ITableInfo
   _kernel?: IContainer
   _values?: any
-  _where?: whereOperators[]
+  _where?: IExpression[]
   _conflictExp?: {
     _columns: string[],
     _where?: any[]
@@ -179,7 +179,7 @@ export interface IBuildableUpdateQuery {
   _table: ITableInfo
   _kernel?: IContainer
   _values?: any
-  _where?: whereOperators[]
+  _where?: IExpression[]
   _limit?: number
 }
 
@@ -187,7 +187,7 @@ export interface IBuildableDeleteQuery {
   _type: 'DELETE'
   _table: ITableInfo
   _kernel?: IContainer
-  _where?: whereOperators[]
+  _where?: IExpression[]
   _limit?: number
 }
 
