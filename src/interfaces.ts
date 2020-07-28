@@ -1,4 +1,4 @@
-import { IColumn, IExpression, IJoin, IOrderBy, IReference } from './intermediate';
+import { IExpression, IJoin, IOrderBy, IReference } from './intermediate';
 
 export type DbValueType = string | number | boolean | Date | null | undefined;
 
@@ -134,7 +134,7 @@ export interface IBuildableSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
   _kernel?: IContainer
-  _columns?: IColumn[]
+  _columns?: IExpression[]
   _joins?: IJoin[]
   _where?: IExpression[]
   _groupBy?: IReference[]
@@ -148,7 +148,7 @@ export interface IBuildableSubSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
   _kernel?: IContainer
-  _columns?: any[]
+  _columns?: IExpression[]
   _joins?: IJoin[]
   _where?: IExpression[]
   _groupBy?: IReference[]

@@ -30,7 +30,6 @@ export interface IReference {
 }
 
 export type IExpression = IFunctionCallOperation | IReference | IMultiOperation | ITernaryOperation | IBinaryOperation | IUnaryOperation | IBuildableSubSelectQuery | IAlias | 'NULL' | '*';
-export type IColumn = IFunctionCallOperation | IReference | IAlias | '*';
 
 export interface IOrderBy {
   _column: string;
@@ -46,4 +45,5 @@ export interface IJoin {
 
 export interface IAlias {
   _alias: string;
+  _operands: IExpression;
 }
