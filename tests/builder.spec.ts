@@ -1,22 +1,23 @@
-import { alias, and, asc, desc, max, Select, sum } from '../src';
+import { alias, and, asc, Delete, desc, Insert, max, Select, sum, Update, Upsert } from '../src';
 import { Employee, Person } from './models';
 import { TableRef } from '../src/builder';
 
 
-const tableName = (Person.prototype as any).tableInfo.tableName;
+const tableInfo = (Person.prototype as any).tableInfo;
+const tableName = tableInfo.tableName;
 const person: InstanceType<typeof Person> = {id: 1, name: 'Name', age: 18, city: 'City'};
 
 describe('Select', () => {
 
   it('Check query info', () => {
     const query = Select(Person);
-    const expectation = (Person.prototype as any).tableInfo;
     expect(query._type).toBe('SELECT');
-    expect(query._table).toStrictEqual(expectation);
+    expect(query._table).toStrictEqual(tableInfo);
   });
 
   it('Columns through array list', () => {
-    const nameAlias = 'PersonName';const coefficient = 2;
+    const nameAlias = 'PersonName';
+    const coefficient = 2;
 
     const columnsThroughList = Select(Person).columns(['name', 'age']);
     const columnsThroughBuilder = Select(Person).columns(({name, age}) => [name, age]);
@@ -42,6 +43,7 @@ describe('Select', () => {
     const enum joinTypes {inner = 'INNER', left = 'LEFT', right = 'RIGHT', full = 'FULL OUTER'}
 
     const employeeTableInfo = (Employee.prototype as any).tableInfo;
+
     const innerJoin = Select(Person).join(Employee, ({id}, {personId}) => id.eq(personId));
     const leftJoin = Select(Person).joinLeft(Employee, ({id}, {personId}) => id.eq(personId));
     const rightJoin = Select(Person).joinRight(Employee, ({id}, {personId}) => id.eq(personId));
@@ -93,6 +95,7 @@ describe('Select', () => {
   it('Joins with alias', () => {
     const tableRef = new TableRef(Person);
     const employeeTableInfo = (Employee.prototype as any).tableInfo;
+
     const enum joinTypes {inner = 'INNER', left = 'LEFT', right = 'RIGHT', full = 'FULL OUTER'}
 
     const innerJoin = Select(Person).join(Employee, tableRef, ({id}, {personId}) => id.eq(personId));
@@ -217,5 +220,129 @@ describe('Select', () => {
     const offset = 3;
     const query = Select(Person).offset(offset);
     expect(query._offset).toBe(offset);
+  });
+});
+
+describe('Insert', () => {
+
+  it('Check query info', () => {
+    const query = Insert(Person);
+    expect(query._type).toBe('INSERT');
+    expect(query._table).toStrictEqual(tableInfo);
+  });
+
+  it('Insert record', () => {
+    const query = Insert(Person).values(person);
+    const expectation = {
+      id: {value: person.id, wrapper: undefined},
+      name: {value: person.name, wrapper: undefined},
+      age: {value: person.age, wrapper: undefined},
+      city: {value: person.city, wrapper: undefined},
+    };
+    expect(query._values).toStrictEqual(expectation);
+    expect(() => {
+      Insert(Person).values({...person, uid: 'a80ec30e-791c-4499-a243-70af8b2bf7ba'});
+    }).toThrowError('Container is not provided');
+  });
+});
+
+describe('Upsert', () => {
+
+  const infoMock = {
+    prototype: {
+      tableInfo: {}
+    }
+  };
+
+  it('Check query info', () => {
+    const query = Upsert(Person);
+    expect(query._type).toBe('UPSERT');
+    expect(query._table).toStrictEqual(tableInfo);
+  });
+
+  it('Upsert record', () => {
+    const defaultUpsert = Upsert(Person).values(person);
+    const withConflict = Upsert(Person).values(person).conflict('id');
+    const expectation = {
+      values: {
+        id: {value: person.id, wrapper: undefined},
+        name: {value: person.name, wrapper: undefined},
+        age: {value: person.age, wrapper: undefined},
+        city: {value: person.city, wrapper: undefined},
+      },
+      conflictExp: {_columns: ['id'], _where: undefined}
+    };
+
+    expect(defaultUpsert._values).toStrictEqual(expectation.values);
+    expect(defaultUpsert._conflictExp).toBeUndefined();
+    expect(withConflict._values).toStrictEqual(expectation.values);
+    expect(withConflict._conflictExp).toStrictEqual(expectation.conflictExp);
+  });
+
+  it('Should fail if table has no primary key', () => {
+    expect(() => {
+      Upsert(infoMock as any).conflict();
+    }).toThrowError('Current table has no primary key. Please provide unique index for upsert');
+  });
+
+  it('Should fail if table indexes meta is empty', () => {
+    expect(() => {
+      Upsert(infoMock as any).conflict('id');
+    }).toThrowError('Table indexes meta is empty');
+  });
+
+  it('Should fail if index is not declared', () => {
+    expect(() => {
+      Upsert(Person).conflict('name');
+    }).toThrowError(`Index name is not declared for table ${tableName}`);
+  });
+});
+
+describe('Update', () => {
+
+  it('Check query info', () => {
+    const query = Update(Person);
+    expect(query._type).toBe('UPDATE');
+    expect(query._table).toStrictEqual(tableInfo);
+  });
+
+  it('Update record', () => {
+    const limit = 10;
+    const query = Update(Person).values(person).where(({id}) => id.eq(person.id)).limit(limit);
+    const expectation = {
+      values: {
+        id: {value: person.id, wrapper: undefined},
+        name: {value: person.name, wrapper: undefined},
+        age: {value: person.age, wrapper: undefined},
+        city: {value: person.city, wrapper: undefined},
+      },
+      where: [{
+        _operator: '=',
+        _operands: [{_column: `${tableName}.id`}, person.id]
+      }]
+    };
+    expect(query._values).toStrictEqual(expectation.values);
+    expect(query._where).toStrictEqual(expectation.where);
+    expect(query._limit).toBe(limit);
+  });
+});
+
+describe('Delete', () => {
+
+  it('Check query info', () => {
+    const query = Delete(Person);
+    expect(query._type).toBe('DELETE');
+    expect(query._table).toStrictEqual(tableInfo);
+  });
+
+  it('Delete record', () => {
+    const limit = 10;
+    const query = Delete(Person).where(({id}) => id.eq(person.id)).limit(limit);
+    const expectation = [{
+      _operator: '=',
+      _operands: [{_column: `${tableName}.id`}, person.id]
+    }];
+    expect(query._where).toStrictEqual(expectation);
+    expect(query._limit).toBe(limit);
   });
 });

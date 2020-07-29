@@ -8,6 +8,11 @@ export class Person {
   })
   id: number;
 
+  @dbField({
+    kind: 'uuid'
+  })
+  uid?: string;
+
   @dbField()
   name: string;
 
