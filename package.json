@@ -10,10 +10,13 @@
     "test": "jest"
   },
   "devDependencies": {
-    "typescript": "^3.8.2",
     "@types/jest": "^26.0.5",
+    "@types/reflect-metadata": "^0.1.0",
+    "inversify": "^5.0.1",
     "jest": "^26.1.0",
-    "ts-jest": "^26.1.3"
+    "reflect-metadata": "^0.1.13",
+    "ts-jest": "^26.1.3",
+    "typescript": "^3.8.2"
   },
   "author": "Volodymyr Iatsyshyn <viatsyshyn@gmail.com>",
   "license": "ISC"
