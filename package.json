@@ -1,6 +1,6 @@
 {
-  "name": "@viatsyshyn/ts-orm",
-  "version": "0.1.1",
+  "name": "@ts-awesome/orm",
+  "version": "0.0.0",
   "description": "TypeScript ORM",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,5 +13,5 @@
     "typescript": "^3.7.5"
   },
   "author": "Volodymyr Iatsyshyn <viatsyshyn@gmail.com>",
-  "license": "ISC"
+  "license": "MIT"
 }
