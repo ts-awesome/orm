@@ -93,7 +93,7 @@ describe('Select', () => {
   });
 
   it('Joins with alias', () => {
-    const tableRef = new TableRef(Person);
+    const tableRef = new TableRef(Employee);
     const employeeTableInfo = (Employee.prototype as any).tableInfo;
 
     const enum joinTypes {inner = 'INNER', left = 'LEFT', right = 'RIGHT', full = 'FULL OUTER'}
@@ -108,7 +108,7 @@ describe('Select', () => {
       _alias: tableRef.tableName,
       _type: joinTypes.inner,
       _condition: {
-        _operands: [{_column: `${tableRef.tableName}.id`}, {_column: `${employeeTableInfo.tableName}.personId`}],
+        _operands: [{_column: `${tableName}.id`}, {_column: `${tableRef.tableName}.personId`}],
         _operator: '='
       }
     }];
@@ -117,7 +117,7 @@ describe('Select', () => {
       _alias: tableRef.tableName,
       _type: joinTypes.left,
       _condition: {
-        _operands: [{_column: `${tableRef.tableName}.id`}, {_column: `${employeeTableInfo.tableName}.personId`}],
+        _operands: [{_column: `${tableName}.id`}, {_column: `${tableRef.tableName}.personId`}],
         _operator: '='
       }
     }];
@@ -126,7 +126,7 @@ describe('Select', () => {
       _alias: tableRef.tableName,
       _type: joinTypes.right,
       _condition: {
-        _operands: [{_column: `${tableRef.tableName}.id`}, {_column: `${employeeTableInfo.tableName}.personId`}],
+        _operands: [{_column: `${tableName}.id`}, {_column: `${tableRef.tableName}.personId`}],
         _operator: '='
       }
     }];
@@ -135,7 +135,7 @@ describe('Select', () => {
       _alias: tableRef.tableName,
       _type: joinTypes.full,
       _condition: {
-        _operands: [{_column: `${tableRef.tableName}.id`}, {_column: `${employeeTableInfo.tableName}.personId`}],
+        _operands: [{_column: `${tableName}.id`}, {_column: `${tableRef.tableName}.personId`}],
         _operator: '='
       }
     }];
@@ -240,9 +240,7 @@ describe('Insert', () => {
       city: {value: person.city, wrapper: undefined},
     };
     expect(query._values).toStrictEqual(expectation);
-    expect(() => {
-      Insert(Person).values({...person, uid: 'a80ec30e-791c-4499-a243-70af8b2bf7ba'});
-    }).toThrowError('Container is not provided');
+    Insert(Person).values({...person, uid: 'a80ec30e-791c-4499-a243-70af8b2bf7ba'});
   });
 });
 

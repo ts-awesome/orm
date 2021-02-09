@@ -108,32 +108,20 @@ export type Columns<T> = {
 
 export interface Order {}
 
-export interface IContainer {
-  get<T>(serviceIdentifier: string | symbol): T;
-  getTagged<T>(serviceIdentifier: string | symbol, key: string | number | symbol, value: any): T;
-  getNamed<T>(serviceIdentifier: string | symbol, named: string | number | symbol): T;
-  getAll<T>(serviceIdentifier: string | symbol): T[];
-  getAllTagged<T>(serviceIdentifier: string | symbol, key: string | number | symbol, value: any): T[];
-  getAllNamed<T>(serviceIdentifier: string | symbol, named: string | number | symbol): T[];
-}
-
 export interface IBuildableWherePartial {
   _table: ITableInfo
-  _kernel?: IContainer
   _where?: any[]
   _limit?: number
 }
 
 export interface IBuildableValuesPartial {
   _table: ITableInfo
-  _kernel?: IContainer
   _values?: any
 }
 
 export interface IBuildableSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
-  _kernel?: IContainer
   _columns?: IExpression[]
   _joins?: IJoin[]
   _where?: IExpression[]
@@ -147,7 +135,6 @@ export interface IBuildableSelectQuery {
 export interface IBuildableSubSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
-  _kernel?: IContainer
   _columns?: IExpression[]
   _joins?: IJoin[]
   _where?: IExpression[]
@@ -158,14 +145,12 @@ export interface IBuildableSubSelectQuery {
 export interface IBuildableInsertQuery {
   _type: 'INSERT'
   _table: ITableInfo
-  _kernel?: IContainer
   _values?: any
 }
 
 export interface IBuildableUpsertQuery {
   _type: 'UPSERT'
   _table: ITableInfo
-  _kernel?: IContainer
   _values?: any
   _where?: IExpression[]
   _conflictExp?: {
@@ -177,7 +162,6 @@ export interface IBuildableUpsertQuery {
 export interface IBuildableUpdateQuery {
   _type: 'UPDATE'
   _table: ITableInfo
-  _kernel?: IContainer
   _values?: any
   _where?: IExpression[]
   _limit?: number
@@ -186,7 +170,6 @@ export interface IBuildableUpdateQuery {
 export interface IBuildableDeleteQuery {
   _type: 'DELETE'
   _table: ITableInfo
-  _kernel?: IContainer
   _where?: IExpression[]
   _limit?: number
 }

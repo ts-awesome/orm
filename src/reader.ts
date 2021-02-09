@@ -1,11 +1,10 @@
-import {IDbDataReader, ICountData, IQueryData, ITableInfo, TableMetaProvider, IDbField, IContainer} from "./interfaces";
+import {IDbDataReader, ICountData, IQueryData, ITableInfo, TableMetaProvider, IDbField} from "./interfaces";
 import {NotFoundError} from "./errors";
-import {DbFieldSymbol} from "./symbols";
 
 export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements IDbDataReader<InstanceType<T>> {
   private tableInfo: ITableInfo;
 
-  constructor(private Model: T, private kernel?: IContainer) {
+  constructor(private Model: T) {
     this.tableInfo = (<any>Model.prototype).tableInfo!;
   }
 
@@ -85,20 +84,11 @@ export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements I
         return ;
       }
 
-      let dbField: IDbField = kind as any;
       if (typeof kind === 'string' || typeof kind === 'symbol') {
-        if (!this.kernel) {
-          throw new Error(`Container is not provided`);
-        }
-
-        dbField = this.kernel.getNamed(DbFieldSymbol, kind);
-
-        if (!dbField) {
-          throw new Error(`Can't resolve IDbField data for kind: ${JSON.stringify(kind)}`);
-        }
+        throw new Error(`DbField specified by string or symbol is not support since 1.0.0`);
       }
 
-      const {reader = (x: any) => x} = dbField || {};
+      const {reader = (x: any) => x} = kind ?? {};
 
       res[propName] = reader(value as any);
     });

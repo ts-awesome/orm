@@ -1,4 +1,4 @@
-import { DbFieldSymbol, DbReader, IDbDataReader, IDbField } from '../src';
+import { DbReader, IDbDataReader } from '../src';
 import { Person } from './models';
 import { Container } from 'inversify';
 
@@ -20,14 +20,10 @@ describe('DbReader', () => {
 
   const persons = generatePersons(5);
   let container: Container;
-  let dbReader: IDbDataReader<Person>, dbReaderWithoutContainer: IDbDataReader<Person>;
+  let dbReader: IDbDataReader<Person>;
   beforeEach(() => {
     container = new Container();
-    container.bind<IDbField<string>>(DbFieldSymbol)
-      .toConstantValue({})
-      .whenTargetNamed('uuid');
-    dbReader = new DbReader(Person, container);
-    dbReaderWithoutContainer = new DbReader(Person);
+    dbReader = new DbReader(Person);
   });
 
   it('readOne', () => {
@@ -76,36 +72,5 @@ describe('DbReader', () => {
     expect(() => {
       dbReader.readCount([{field: fieldValue as any}])
     }).toThrowError(`Can\'t read count value from db. Invalid Count ${fieldValue}`);
-  });
-
-  it('Test should fail if exists value with kind and container was not provided', () => {
-    const errorMassage = 'Container is not provided';
-    expect(() => {
-      dbReaderWithoutContainer.readOne([{...persons[1]}])
-    }).toThrowError(errorMassage);
-    expect(() => {
-      dbReaderWithoutContainer.readOneOrRejectNotFound([{...persons[1]}])
-    }).toThrowError(errorMassage);
-    expect(() => {
-      dbReaderWithoutContainer.readMany([{...persons[1]}])
-    }).toThrowError(errorMassage);
-    expect(() => {
-      dbReaderWithoutContainer.readManyOrRejectNotFound([{...persons[1]}])
-    }).toThrowError(errorMassage);
-  });
-
-  it('Test should fail if IDbField was not bound for kind', () => {
-    expect(() => {
-      dbReaderWithoutContainer.readOneOrRejectNotFound([{...persons[1]}])
-    }).toThrowError();
-    expect(() => {
-      dbReaderWithoutContainer.readOneOrRejectNotFound([{...persons[1]}])
-    }).toThrowError();
-    expect(() => {
-      dbReaderWithoutContainer.readMany([{...persons[1]}])
-    }).toThrowError();
-    expect(() => {
-      dbReaderWithoutContainer.readManyOrRejectNotFound([{...persons[1]}])
-    }).toThrowError();
   });
 });

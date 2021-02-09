@@ -1,4 +1,6 @@
-import { dbField, dbTable } from '../src';
+import { dbField, dbTable, IDbField } from '../src';
+
+const UUID: IDbField = {}
 
 @dbTable('Person', [{name: 'id', fields: ['id']}])
 export class Person {
@@ -6,32 +8,32 @@ export class Person {
     primaryKey: true,
     autoIncrement: true
   })
-  id: number;
+  id!: number;
 
   @dbField({
-    kind: 'uuid'
+    kind: UUID
   })
   uid?: string;
 
-  @dbField()
-  name: string;
+  @dbField
+  name!: string;
 
-  @dbField()
-  age: number;
+  @dbField
+  age!: number;
 
-  @dbField()
-  city: string;
+  @dbField
+  city!: string;
 }
 
 @dbTable('Employee')
 export class Employee {
 
-  @dbField()
-  personId: number;
+  @dbField
+  personId!: number;
 
-  @dbField()
-  company: string;
+  @dbField
+  company!: string;
 
-  @dbField()
-  salary: number;
+  @dbField
+  salary!: number;
 }

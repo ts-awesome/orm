@@ -23,12 +23,9 @@ import {
   WhereBuilder,
   IFieldInfo,
   IBuildableUpsertQuery,
-  IContainer,
-  IDbField,
   ITableRef,
 } from './interfaces';
 import {and} from './operators';
-import {DbFieldSymbol} from "./symbols";
 
 export interface IExpr {
   _alias?: string
@@ -77,24 +74,24 @@ function proxy<T>({tableName: originalTableName, fields, primaryKey}: ITableInfo
   });
 }
 
-function treeOf<T>(_: Partial<T>, tableInfo: ITableInfo, _kernel?: IContainer): any {
+function treeOf<T>(_: Partial<T>, tableInfo: ITableInfo): any {
   validateModel(_, tableInfo);
   return and(
     ...Object.keys(_)
-      .map(field => (new ColumnWrapper(resolveColumn(field as string, tableInfo, _kernel)) as IOperandable<T>).eq(_[field]))
+      .map(field => (new ColumnWrapper(resolveColumn(field as string, tableInfo)) as IOperandable<T>).eq(_[field]))
   );
 }
 
-function columnsOf<T>(_: ColumnsList<T>, {tableName, fields}: ITableInfo, _kernel?: IContainer): any {
+function columnsOf<T>(_: ColumnsList<T>, {tableName, fields}: ITableInfo): any {
   _.forEach(field => {
     if (!fields.has(field as string) || fields.get(field as string)!.relatedTo) {
       throw new Error(`Field '${field}' should be decorated with @dbField()`)
     }
   });
-  return _.map(field => ({_column: resolveColumn(field as string, {tableName, fields}, _kernel)}));
+  return _.map(field => ({_column: resolveColumn(field as string, {tableName, fields})}));
 }
 
-function resolveColumn(property: string, {tableName, fields}: ITableInfo, _kernel?: IContainer): string {
+function resolveColumn(property: string, {tableName, fields}: ITableInfo): string {
 
   let wrapper: ((a: string) => string) | undefined = undefined;
   const info = fields.get(property);
@@ -102,20 +99,10 @@ function resolveColumn(property: string, {tableName, fields}: ITableInfo, _kerne
     const {kind} = info;
 
     if (kind) {
-      let dbField: IDbField = kind as any;
       if (typeof kind === 'string' || typeof kind === 'symbol') {
-        if (!_kernel) {
-          throw new Error(`Container is not provided`);
-        }
-
-        dbField = _kernel.getNamed(DbFieldSymbol, kind);
-
-        if (!dbField) {
-          throw new Error(`Can't resolve IDbField data for kind: ${JSON.stringify(kind)}`);
-        }
-
-        wrapper = dbField.readQuery;
+        throw new Error(`DbField specified by string or symbol is not support since 1.0.0`);
       }
+      wrapper = kind.readQuery;
     }
   }
 
@@ -139,7 +126,7 @@ function validateFields(_: string[], tableInfo: ITableInfo): void {
 function where<T>(this: IBuildableWherePartial, _: Partial<T> | WhereBuilder<T>) {
   const tree = typeof _ === 'function'
     ? (_ as WhereBuilder<T>)(proxy<T>(this._table))
-    : treeOf(_, this._table, this._kernel);
+    : treeOf(_, this._table);
   this._where = this._where || [];
   this._where.push(tree);
   return this;
@@ -155,21 +142,21 @@ function having<T>(this: IBuildableSelectQuery, _: HavingBuilder<T>) {
 function columns<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | ColumnsBuilder<T>) {
   this._columns = typeof _ === 'function'
     ? _(proxy<T>(this._table))
-    : columnsOf(_, this._table, this._kernel);
+    : columnsOf(_, this._table);
   return this;
 }
 
 function orderBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | OrderBuilder<T>) {
   this._orderBy = typeof _ === 'function'
     ? _(proxy<T>(this._table))
-    : columnsOf(_, this._table, this._kernel);
+    : columnsOf(_, this._table);
   return this;
 }
 
 function groupBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | GroupByBuilder<T>) {
   this._groupBy = typeof _ === 'function'
     ?  _(proxy<T>(this._table))
-    : columnsOf(_, this._table, this._kernel);
+    : columnsOf(_, this._table);
   return this;
 }
 
@@ -183,25 +170,15 @@ function values<T>(this: IBuildableValuesPartial, _: Partial<T> | ValuesBuilder<
       .map(prop => this._table.fields.get(prop)!)
       .reduce((p: any, {getValue, kind, name}: IFieldInfo) => {
         let value = getValue(_);
-        let wrapper: any  = undefined;
+        let wrapper: any = undefined;
 
         if (kind) {
-          let dbField: IDbField = kind as any;
           if (typeof kind === 'string' || typeof kind === 'symbol') {
-            if (!this._kernel) {
-              throw new Error(`Container is not provided`);
-            }
-
-            dbField = this._kernel.getNamed(DbFieldSymbol, kind);
-
-            if (!dbField) {
-              throw new Error(`Can't resolve IDbField data for kind: ${JSON.stringify(kind)}`);
-            }
-
-            wrapper = dbField.writeQuery;
+            throw new Error(`DbField specified by string or symbol is not support since 1.0.0`);
           }
+          wrapper = kind.writeQuery;
 
-          const {writer = (x: any) => x} = dbField;
+          const {writer = (x: any) => x} = kind;
           value = writer(value);
         }
         return { ...p, [name]: {value, wrapper} };
@@ -238,7 +215,7 @@ function conflict<T>(this: IBuildableUpsertQuery, _?: string) {
     if (index.where) {
       const tree = typeof index.where === 'function'
         ? (index.where as WhereBuilder<T>)(proxy<T>(this._table, true))
-        : treeOf(index.where, this._table, this._kernel);
+        : treeOf(index.where, this._table);
       _where = [tree];
     }
   }
@@ -356,9 +333,8 @@ export class TableRef<T extends TableMetaProvider<InstanceType<T>>> implements I
   }
 }
 
-export function Select<T extends TableMetaProvider<InstanceType<T>>>(_: T, _kernel?: IContainer): ISelectBuilder<T> {
+export function Select<T extends TableMetaProvider<InstanceType<T>>>(_: T): ISelectBuilder<T> {
   return {
-    _kernel,
     _type: 'SELECT',
     _table: (<any>_).prototype.tableInfo,
     columns,
@@ -375,18 +351,16 @@ export function Select<T extends TableMetaProvider<InstanceType<T>>>(_: T, _kern
   } as any;
 }
 
-export function Insert<T extends TableMetaProvider<InstanceType<T>>>(_: T, _kernel?: IContainer): IInsertBuilder<InstanceType<T>> {
+export function Insert<T extends TableMetaProvider<InstanceType<T>>>(_: T): IInsertBuilder<InstanceType<T>> {
   return {
-    _kernel,
     _type: 'INSERT',
     _table: (<any>_).prototype.tableInfo,
     values,
   } as any;
 }
 
-export function Upsert<T extends TableMetaProvider<InstanceType<T>>>(_: T, _kernel?: IContainer): IUpsertBuilder<InstanceType<T>> {
+export function Upsert<T extends TableMetaProvider<InstanceType<T>>>(_: T): IUpsertBuilder<InstanceType<T>> {
   return {
-    _kernel,
     _type: 'UPSERT',
     _table: (<any>_).prototype.tableInfo,
     _limit: 1,
@@ -397,9 +371,8 @@ export function Upsert<T extends TableMetaProvider<InstanceType<T>>>(_: T, _kern
   } as any;
 }
 
-export function Update<T extends TableMetaProvider<InstanceType<T>>>(_: T, _kernel?: IContainer): IUpdateBuilder<InstanceType<T>> {
+export function Update<T extends TableMetaProvider<InstanceType<T>>>(_: T): IUpdateBuilder<InstanceType<T>> {
   return {
-    _kernel,
     _type: 'UPDATE',
     _table: (<any>_).prototype.tableInfo,
     values,
@@ -408,9 +381,8 @@ export function Update<T extends TableMetaProvider<InstanceType<T>>>(_: T, _kern
   } as any;
 }
 
-export function Delete<T extends TableMetaProvider<InstanceType<T>>>(_: T, _kernel?: IContainer): IDeleteBuilder<InstanceType<T>> {
+export function Delete<T extends TableMetaProvider<InstanceType<T>>>(_: T): IDeleteBuilder<InstanceType<T>> {
   return {
-    _kernel,
     _type: 'DELETE',
     _table: (<any>_).prototype.tableInfo,
     where,
