@@ -49,11 +49,6 @@ export function dbTable<T>(...args: any): ClassDecorator {
 
 interface IDBFieldMeta extends Omit<IFieldInfo, 'getValue' | 'relatedTo' | 'name'> {
   name?: string;
-
-  /** @deprecated */
-  uid?: boolean;
-  /** @deprecated */
-  json?: boolean;
 }
 
 export function dbField(target: any, key: string): void;
@@ -73,15 +68,7 @@ export function dbField(...args: any): PropertyDecorator {
     const {fields} = tableInfo;
 
     if (typeof fieldMeta !== 'string' && fieldMeta) {
-      let {name, primaryKey, uid, json, kind, ...rest}: IDBFieldMeta = fieldMeta;
-      if (uid) {
-        // console.warn(`Flag dbField.uid is deprecated. Please use dbField.kind instead.`);
-        kind = kind || 'uuid';
-      }
-      if (json) {
-        // console.warn(`Flag dbField.json is deprecated. Please use dbField.kind instead.`);
-        kind = kind || 'json';
-      }
+      let {name, primaryKey, kind, ...rest}: IDBFieldMeta = fieldMeta;
       name = name ?? (typeof key === 'string' ? key : key.toString());
       fields.set(key.toString(), {
         ...rest,

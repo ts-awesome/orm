@@ -81,7 +81,7 @@ export class UserModel {
 }
 ```
 
-### Setup your container and bindings with `@viatsyshyn/ts-orm-pg`
+### Setup your container and bindings with `@ts-awesome/orm-pg`
 
 ```ts
 container.bind<pg.Pool>(Symbol.for('PgPool'))

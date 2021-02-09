@@ -20,7 +20,7 @@ export interface IFieldInfo {
   };
   sensitive?: true;
   default?: DbValueType;
-  kind?: IDbField | 'uuid' | 'json' | string | symbol;
+  kind?: IDbField;
 
   getValue(rec: any): DbValueType;
 }

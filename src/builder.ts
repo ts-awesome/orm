@@ -260,7 +260,10 @@ function parseJoinArgs<X extends TableMetaProvider<InstanceType<X>>>(...args: an
   if (args.length === 2) {
     args = [args[0], undefined, args[1]];
   }
-  return args as any;
+  if (args.length === 3) {
+    return args as any;
+  }
+  throw new Error('Expected 2 or 3 arguments, got ' + args.length);
 }
 
 function join<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
@@ -274,7 +277,7 @@ function join<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSele
     _table: table.tableName,
     _alias: alias?.tableName,
     _type: 'INNER',
-    _condition: condition(proxy<X>(this._table, undefined, alias?.tableName), proxy<X>(table)) as any
+    _condition: condition(proxy<X>(this._table), proxy<X>(table, undefined, alias?.tableName)) as any,
   });
   return this;
 }
@@ -290,7 +293,7 @@ function joinLeft<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildable
     _table: table.tableName,
     _alias: alias?.tableName,
     _type: 'LEFT',
-    _condition: condition(proxy<X>(this._table, undefined, alias?.tableName), proxy<X>(table)) as any
+    _condition: condition(proxy<X>(this._table), proxy<X>(table, undefined, alias?.tableName)) as any,
   });
   return this;
 }
@@ -306,7 +309,7 @@ function joinRight<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildabl
     _table: table.tableName,
     _alias: alias?.tableName,
     _type: 'RIGHT',
-    _condition: condition(proxy<X>(this._table, undefined, alias?.tableName), proxy<X>(table)) as any
+    _condition: condition(proxy<X>(this._table), proxy<X>(table, undefined, alias?.tableName)) as any,
   });
   return this;
 }
@@ -322,7 +325,7 @@ function joinFull<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildable
     _table: table.tableName,
     _alias: alias?.tableName,
     _type: 'FULL OUTER',
-    _condition: condition(proxy<X>(this._table, undefined, alias?.tableName), proxy<X>(table)) as any
+    _condition: condition(proxy<X>(this._table), proxy<X>(table, undefined, alias?.tableName)) as any,
   });
   return this;
 }
