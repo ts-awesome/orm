@@ -122,6 +122,7 @@ export interface IBuildableValuesPartial {
 export interface IBuildableSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
+  _distinct?: boolean
   _columns?: IExpression[]
   _joins?: IJoin[]
   _where?: IExpression[]
@@ -135,6 +136,7 @@ export interface IBuildableSelectQuery {
 export interface IBuildableSubSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
+  _distinct?: boolean
   _columns?: IExpression[]
   _joins?: IJoin[]
   _where?: IExpression[]

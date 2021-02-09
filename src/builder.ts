@@ -333,10 +333,11 @@ export class TableRef<T extends TableMetaProvider<InstanceType<T>>> implements I
   }
 }
 
-export function Select<T extends TableMetaProvider<InstanceType<T>>>(_: T): ISelectBuilder<T> {
+export function Select<T extends TableMetaProvider<InstanceType<T>>>(_: T, distinct = false): ISelectBuilder<T> {
   return {
     _type: 'SELECT',
     _table: (<any>_).prototype.tableInfo,
+    _distinct: distinct,
     columns,
     join,
     joinLeft,
