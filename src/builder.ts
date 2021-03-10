@@ -23,7 +23,7 @@ import {
   WhereBuilder,
   IFieldInfo,
   IBuildableUpsertQuery,
-  ITableRef,
+  ITableRef, IBuildableDeleteQuery, IBuildableUpdateQuery, IBuildableInsertQuery,
 } from './interfaces';
 import {and} from './operators';
 
@@ -233,7 +233,7 @@ function offset(this: IBuildableSelectQuery, offset: number) {
   return this;
 }
 
-function parseJoinArgs<X extends TableMetaProvider<InstanceType<X>>>(...args: any[]): [X, ITableRef<X> | undefined, JoinBuilder<any, InstanceType<X>>] {
+function parseJoinArgs<X extends TableMetaProvider<X>>(...args: any[]): [X, ITableRef<X> | undefined, JoinBuilder<any, InstanceType<X>>] {
   if (args.length === 2) {
     args = [args[0], undefined, args[1]];
   }
@@ -243,9 +243,9 @@ function parseJoinArgs<X extends TableMetaProvider<InstanceType<X>>>(...args: an
   throw new Error('Expected 2 or 3 arguments, got ' + args.length);
 }
 
-function join<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
-function join<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
-function join<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, ...args: any[]) {
+function join<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
+function join<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
+function join<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, ...args: any[]) {
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
   this._joins = this._joins || [];
@@ -259,9 +259,9 @@ function join<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSele
   return this;
 }
 
-function joinLeft<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
-function joinLeft<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
-function joinLeft<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, ...args: any[]) {
+function joinLeft<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
+function joinLeft<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
+function joinLeft<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, ...args: any[]) {
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
   this._joins = this._joins || [];
@@ -275,9 +275,9 @@ function joinLeft<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildable
   return this;
 }
 
-function joinRight<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
-function joinRight<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
-function joinRight<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, ...args: any[]) {
+function joinRight<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
+function joinRight<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
+function joinRight<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, ...args: any[]) {
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
   this._joins = this._joins || [];
@@ -291,9 +291,9 @@ function joinRight<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildabl
   return this;
 }
 
-function joinFull<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
-function joinFull<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
-function joinFull<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildableSelectQuery, ...args: any[]) {
+function joinFull<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
+function joinFull<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
+function joinFull<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, ...args: any[]) {
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
   this._joins = this._joins || [];
@@ -307,7 +307,7 @@ function joinFull<X extends TableMetaProvider<InstanceType<X>>>(this: IBuildable
   return this;
 }
 
-export class TableRef<T extends TableMetaProvider<InstanceType<T>>> implements ITableRef<T> {
+export class TableRef<T extends TableMetaProvider<T>> implements ITableRef<T> {
   private readonly info: ITableInfo;
   private readonly alias: string;
 
@@ -333,7 +333,7 @@ export class TableRef<T extends TableMetaProvider<InstanceType<T>>> implements I
   }
 }
 
-export function Select<T extends TableMetaProvider<InstanceType<T>>>(_: T, distinct = false): ISelectBuilder<T> {
+export function Select<T extends TableMetaProvider<T>>(_: T, distinct = false): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
   return {
     _type: 'SELECT',
     _table: (<any>_).prototype.tableInfo,
@@ -349,18 +349,18 @@ export function Select<T extends TableMetaProvider<InstanceType<T>>>(_: T, disti
     orderBy,
     limit,
     offset,
-  } as any;
+  } as IBuildableSelectQuery as any;
 }
 
-export function Insert<T extends TableMetaProvider<InstanceType<T>>>(_: T): IInsertBuilder<InstanceType<T>> {
+export function Insert<T extends TableMetaProvider<T>>(_: T): IInsertBuilder<InstanceType<T>> & IBuildableInsertQuery {
   return {
     _type: 'INSERT',
     _table: (<any>_).prototype.tableInfo,
     values,
-  } as any;
+  } as IBuildableInsertQuery as any;
 }
 
-export function Upsert<T extends TableMetaProvider<InstanceType<T>>>(_: T): IUpsertBuilder<InstanceType<T>> {
+export function Upsert<T extends TableMetaProvider<T>>(_: T): IUpsertBuilder<InstanceType<T>> & IBuildableUpsertQuery {
   return {
     _type: 'UPSERT',
     _table: (<any>_).prototype.tableInfo,
@@ -369,24 +369,24 @@ export function Upsert<T extends TableMetaProvider<InstanceType<T>>>(_: T): IUps
     where,
     limit,
     conflict
-  } as any;
+  } as IBuildableUpsertQuery as any;
 }
 
-export function Update<T extends TableMetaProvider<InstanceType<T>>>(_: T): IUpdateBuilder<InstanceType<T>> {
+export function Update<T extends TableMetaProvider<T>>(_: T): IUpdateBuilder<InstanceType<T>> & IBuildableUpdateQuery {
   return {
     _type: 'UPDATE',
     _table: (<any>_).prototype.tableInfo,
     values,
     where,
     limit,
-  } as any;
+  } as IBuildableUpdateQuery as any;
 }
 
-export function Delete<T extends TableMetaProvider<InstanceType<T>>>(_: T): IDeleteBuilder<InstanceType<T>> {
+export function Delete<T extends TableMetaProvider<T>>(_: T): IDeleteBuilder<InstanceType<T>> & IBuildableDeleteQuery {
   return {
     _type: 'DELETE',
     _table: (<any>_).prototype.tableInfo,
     where,
     limit,
-  } as any;
+  } as IBuildableDeleteQuery as any;
 }

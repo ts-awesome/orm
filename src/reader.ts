@@ -1,11 +1,15 @@
-import {IDbDataReader, ICountData, IQueryData, ITableInfo, TableMetaProvider, IDbField} from "./interfaces";
+import {IDbDataReader, ICountData, IQueryData, ITableInfo, TableMetaProvider} from "./interfaces";
 import {NotFoundError} from "./errors";
 
-export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements IDbDataReader<InstanceType<T>> {
+export class DbReader<X extends TableMetaProvider<X>, T = InstanceType<X>> implements IDbDataReader<T> {
   private tableInfo: ITableInfo;
 
-  constructor(private Model: T) {
-    this.tableInfo = (<any>Model.prototype).tableInfo!;
+  constructor(private Model: X) {
+    const info = (Model.prototype as any).tableInfo;
+    if (info == null) {
+      throw new Error(`Model ${Model.prototype?.constructor?.name ?? JSON.stringify(Model)} is not annotated with @dbTable`);
+    }
+    this.tableInfo = info;
   }
 
   /**
@@ -16,11 +20,11 @@ export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements I
    * @returns First element from query result
    */
 
-  readOne(data: IQueryData[]): InstanceType<T> | undefined {
+  readOne(data: IQueryData[]): T | undefined {
     return data.length ? this.read(data[0]) : undefined;
   }
 
-  readOneOrRejectNotFound(data: any[]): InstanceType<T> {
+  readOneOrRejectNotFound(data: any[]): T {
     if (data.length > 0) {
       return this.read(data[0]);
     }
@@ -28,10 +32,11 @@ export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements I
     throw new NotFoundError();
   }
 
-  readMany(data: IQueryData[]): InstanceType<T>[] {
+  readMany(data: IQueryData[]): ReadonlyArray<T> {
     return data.map(row => this.read(row));
   }
-  readManyOrRejectNotFound(data: IQueryData[]): InstanceType<T>[] {
+
+  readManyOrRejectNotFound(data: IQueryData[]): ReadonlyArray<T> {
     if (data.length > 0) {
       return this.readMany(data);
     }
@@ -59,7 +64,7 @@ export class DbReader<T extends TableMetaProvider<InstanceType<T>>> implements I
     return count;
   }
 
-  protected read(row: IQueryData): InstanceType<T> {
+  protected read(row: IQueryData): T {
     let res = new this.Model();
     let colPropMap = {};
     this.tableInfo.fields.forEach(({name}, propName) => {
