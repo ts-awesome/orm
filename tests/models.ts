@@ -2,7 +2,7 @@ import { dbField, dbTable, IDbField } from '../src';
 
 const UUID: IDbField = {}
 
-@dbTable('Person', [{name: 'id', fields: ['id']}])
+@dbTable('Person', [{name: 'idx', fields: ['id']}])
 export class Person {
   @dbField({
     primaryKey: true,

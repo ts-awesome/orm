@@ -48,7 +48,11 @@ function proxy<T>({tableName: originalTableName, fields, primaryKey}: ITableInfo
 
       const {relatedTo, name} = fields.get(property)!;
       if (!relatedTo) {
-        return new ColumnWrapper(ignoreTableName ? name : `${tableName}.${name}`);
+        const ref = resolveColumn(property, {tableName, fields})
+        if (ignoreTableName) {
+          ref.table = undefined;
+        }
+        return new ColumnWrapper(ref);
       }
 
       if (!primaryKey) {

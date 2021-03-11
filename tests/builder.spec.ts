@@ -25,11 +25,16 @@ describe('Select', () => {
     const columnsWithExpression = Select(Person).columns(({age}) => [age.mul(coefficient), max(age)]);
 
     const expectation = {
-      default: [{_column: `${tableName}.name`}, {_column: `${tableName}.age`}],
-      alias: [{_alias: nameAlias, _operands: [{_column: `${tableName}.name`}]}],
+      default: [
+        {_column: {table: tableName, name: 'name', wrapper: undefined}},
+        {_column: {table: tableName, name: 'age', wrapper: undefined}}
+      ],
+      alias: [
+        {_alias: nameAlias, _operands: [{_column: {table: tableName, name: 'name', wrapper: undefined}}]}
+      ],
       expression: [
-        {_operator: '*', _operands: [{_column: `${tableName}.age`}, coefficient]},
-        {_func: 'MAX', _args: [{_column: `${tableName}.age`}]}
+        {_operator: '*', _operands: [{_column: {table: tableName, name: 'age', wrapper: undefined}}, coefficient]},
+        {_func: 'MAX', _args: [{_column: {table: tableName, name: 'age', wrapper: undefined}}]}
       ]
     };
 
@@ -54,7 +59,7 @@ describe('Select', () => {
       _alias: undefined,
       _type: joinTypes.inner,
       _condition: {
-        _operands: [{_column: `${tableName}.id`}, {_column: `${employeeTableInfo.tableName}.personId`}],
+        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: employeeTableInfo.tableName, name: `personId`, wrapper: undefined}}],
         _operator: '='
       }
     }];
@@ -63,7 +68,7 @@ describe('Select', () => {
       _alias: undefined,
       _type: joinTypes.left,
       _condition: {
-        _operands: [{_column: `${tableName}.id`}, {_column: `${employeeTableInfo.tableName}.personId`}],
+        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: employeeTableInfo.tableName, name: `personId`, wrapper: undefined}}],
         _operator: '='
       }
     }];
@@ -72,7 +77,7 @@ describe('Select', () => {
       _alias: undefined,
       _type: joinTypes.right,
       _condition: {
-        _operands: [{_column: `${tableName}.id`}, {_column: `${employeeTableInfo.tableName}.personId`}],
+        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: employeeTableInfo.tableName, name: `personId`, wrapper: undefined}}],
         _operator: '='
       }
     }];
@@ -81,7 +86,7 @@ describe('Select', () => {
       _alias: undefined,
       _type: joinTypes.full,
       _condition: {
-        _operands: [{_column: `${tableName}.id`}, {_column: `${employeeTableInfo.tableName}.personId`}],
+        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: employeeTableInfo.tableName, name: `personId`, wrapper: undefined}}],
         _operator: '='
       }
     }];
@@ -108,7 +113,7 @@ describe('Select', () => {
       _alias: tableRef.tableName,
       _type: joinTypes.inner,
       _condition: {
-        _operands: [{_column: `${tableName}.id`}, {_column: `${tableRef.tableName}.personId`}],
+        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: tableRef.tableName, name: `personId`, wrapper: undefined}}],
         _operator: '='
       }
     }];
@@ -117,7 +122,7 @@ describe('Select', () => {
       _alias: tableRef.tableName,
       _type: joinTypes.left,
       _condition: {
-        _operands: [{_column: `${tableName}.id`}, {_column: `${tableRef.tableName}.personId`}],
+        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: tableRef.tableName, name: `personId`, wrapper: undefined}}],
         _operator: '='
       }
     }];
@@ -126,7 +131,7 @@ describe('Select', () => {
       _alias: tableRef.tableName,
       _type: joinTypes.right,
       _condition: {
-        _operands: [{_column: `${tableName}.id`}, {_column: `${tableRef.tableName}.personId`}],
+        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: tableRef.tableName, name: `personId`, wrapper: undefined}}],
         _operator: '='
       }
     }];
@@ -135,7 +140,7 @@ describe('Select', () => {
       _alias: tableRef.tableName,
       _type: joinTypes.full,
       _condition: {
-        _operands: [{_column: `${tableName}.id`}, {_column: `${tableRef.tableName}.personId`}],
+        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: tableRef.tableName, name: `personId`, wrapper: undefined}}],
         _operator: '='
       }
     }];
@@ -151,8 +156,8 @@ describe('Select', () => {
     const expectation = [{
       _operator: 'AND',
       _operands: [
-        {_operator: '=', _operands: [{_column: `${tableName}.age`}, person.age]},
-        {_operator: 'LIKE', _operands: [{_column: `${tableName}.name`}, person.name]},
+        {_operator: '=', _operands: [{_column: {table: tableName, name: 'age', wrapper: undefined}}, person.age]},
+        {_operator: 'LIKE', _operands: [{_column: {table: tableName, name: 'name', wrapper: undefined}}, person.name]},
       ]
     }];
     expect(query._where).toStrictEqual(expectation);
@@ -167,13 +172,13 @@ describe('Select', () => {
       .having(({salary}) => sum(salary).gt(salaryRate));
 
     const expectation = {
-      _columns: [{_func: 'SUM', _args: [{_column: `${employeeTableName}.salary`}]}],
-      _groupBy: [{_column: `${employeeTableName}.company`}],
+      _columns: [{_func: 'SUM', _args: [{_column: {table: employeeTableName, name: 'salary', wrapper: undefined}}]}],
+      _groupBy: [{_column: {table: employeeTableName, name: 'company', wrapper: undefined}}],
       _having: [{
         _operator: '>',
         _operands: [{
           _func: 'SUM',
-          _args: [{_column: `${employeeTableName}.salary`}]
+          _args: [{_column: {table: employeeTableName, name: 'salary', wrapper: undefined}}]
         }, salaryRate]
       }]
     };
@@ -186,7 +191,7 @@ describe('Select', () => {
   it('Group by', () => {
     const queryThroughList = Select(Person).groupBy(['city']);
     const queryThroughBuilder = Select(Person).groupBy(({city}) => [city]);
-    const expectation = [{_column: `${tableName}.city`}];
+    const expectation = [{_column: {table: tableName, name: 'city', wrapper: undefined}}];
 
     expect(queryThroughList._groupBy).toStrictEqual(expectation);
     expect(queryThroughBuilder._groupBy).toStrictEqual(expectation);
@@ -199,9 +204,9 @@ describe('Select', () => {
     const descOrder = Select(Person).orderBy(({city}) => [desc(city)]);
 
     const expectation = {
-      default: [{_column: `${tableName}.city`}],
-      asc: [{_column: `${tableName}.city`, _order: 'ASC'}],
-      desc: [{_column: `${tableName}.city`, _order: 'DESC'}]
+      default: [{_column: {table: tableName, name: 'city', wrapper: undefined}}],
+      asc: [{_column: {table: tableName, name: 'city', wrapper: undefined}, _order: 'ASC'}],
+      desc: [{_column: {table: tableName, name: 'city', wrapper: undefined}, _order: 'DESC'}]
     };
 
     expect(orderByThroughList._orderBy).toStrictEqual(expectation.default);
@@ -260,7 +265,7 @@ describe('Upsert', () => {
 
   it('Upsert record', () => {
     const defaultUpsert = Upsert(Person).values(person);
-    const withConflict = Upsert(Person).values(person).conflict('id');
+    const withConflict = Upsert(Person).values(person).conflict('idx');
     const expectation = {
       values: {
         id: {value: person.id, wrapper: undefined},
@@ -316,7 +321,7 @@ describe('Update', () => {
       },
       where: [{
         _operator: '=',
-        _operands: [{_column: `${tableName}.id`}, person.id]
+        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, person.id]
       }]
     };
     expect(query._values).toStrictEqual(expectation.values);
@@ -338,7 +343,7 @@ describe('Delete', () => {
     const query = Delete(Person).where(({id}) => id.eq(person.id)).limit(limit);
     const expectation = [{
       _operator: '=',
-      _operands: [{_column: `${tableName}.id`}, person.id]
+      _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, person.id]
     }];
     expect(query._where).toStrictEqual(expectation);
     expect(query._limit).toBe(limit);

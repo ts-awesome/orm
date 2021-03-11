@@ -217,7 +217,7 @@ export interface ISelectBuilder<T> extends IWhereHandler<T> {
 export interface IInsertBuilder<T> extends IValuesHandler<T> {}
 
 export interface IUpsertBuilder<T> extends IValuesHandler<T>, IWhereHandler<T> {
-  conflict(_?: string): this
+  conflict(index?: string): this
 }
 export interface IUpdateBuilder<T> extends IValuesHandler<T>, IWhereHandler<T> {}
 export interface IDeleteBuilder<T> extends IWhereHandler<T> {}
