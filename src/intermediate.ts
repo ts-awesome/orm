@@ -1,5 +1,11 @@
 import { IBuildableSubSelectQuery, ITableInfo } from './interfaces';
 
+export interface IColumnRef {
+  table?: string;
+  name: string;
+  wrapper?(name: string): string;
+}
+
 export interface IUnaryOperation {
   _operator: '!';
   _operands: [IExpression];
@@ -26,14 +32,14 @@ export interface IFunctionCallOperation {
 }
 
 export interface IReference {
-  _column: string;
+  _column: IColumnRef;
 }
 
 export type IExpression = IFunctionCallOperation | IReference | IMultiOperation | ITernaryOperation | IBinaryOperation | IUnaryOperation | IBuildableSubSelectQuery | IAlias | 'NULL' | '*';
 
 export interface IOrderBy {
-  _column: string;
-  _order: 'ASC' | 'DESC';
+  _column: IColumnRef;
+  _order?: 'ASC' | 'DESC';
 }
 
 export interface IJoin {

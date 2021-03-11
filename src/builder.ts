@@ -26,6 +26,7 @@ import {
   ITableRef, IBuildableDeleteQuery, IBuildableUpdateQuery, IBuildableInsertQuery,
 } from './interfaces';
 import {and} from './operators';
+import {IColumnRef, IExpression, IReference} from "./intermediate";
 
 export interface IExpr {
   _alias?: string
@@ -57,15 +58,15 @@ function proxy<T>({tableName: originalTableName, fields, primaryKey}: ITableInfo
       return new Operandable('SUBQUERY', [{
         _type: 'SELECT',
         _columns: [
-          {_column: `${relatedTo.tableName}.${name}`}
+          {_column: {table: relatedTo.tableName, name} }
         ],
-        _table: {tableName: relatedTo.tableName},
+        _table: {tableName: relatedTo.tableName, fields: null as any},
         _where: [
           {
             _operator: '=',
             _operands: [
-              {_column: `${relatedTo.tableName}.${relatedTo.keyField}`},
-              {_column: `${tableName}.${primaryKey}`}
+              {_column: {table: relatedTo.tableName, name: relatedTo.keyField} },
+              {_column: {table: tableName, name: primaryKey} }
             ]
           }
         ]
@@ -82,33 +83,32 @@ function treeOf<T>(_: Partial<T>, tableInfo: ITableInfo): any {
   );
 }
 
-function columnsOf<T>(_: ColumnsList<T>, {tableName, fields}: ITableInfo): any {
+function columnsOf<T>(_: ColumnsList<T>, {tableName, fields}: ITableInfo): IReference[] {
   _.forEach(field => {
     if (!fields.has(field as string) || fields.get(field as string)!.relatedTo) {
-      throw new Error(`Field '${field}' should be decorated with @dbField()`)
+      throw new Error(`Field '${field}' should be decorated with @dbField`)
     }
   });
   return _.map(field => ({_column: resolveColumn(field as string, {tableName, fields})}));
 }
 
-function resolveColumn(property: string, {tableName, fields}: ITableInfo): string {
+function resolveColumn(property: string, {tableName, fields}: ITableInfo): IColumnRef {
 
-  let wrapper: ((a: string) => string) | undefined = undefined;
   const info = fields.get(property);
-  if (info) {
-    const {kind} = info;
-
-    if (kind) {
-      if (typeof kind === 'string' || typeof kind === 'symbol') {
-        throw new Error(`DbField specified by string or symbol is not support since 1.0.0`);
-      }
-      wrapper = kind.readQuery;
-    }
+  if (!info) {
+    throw new Error(`Property ${property} should be decorated with @dbField`);
   }
 
-  const name = tableName + '.' + fields.get(property)!.name;
+  const {name = property, kind} = info;
+  if (typeof kind === 'string' || typeof kind === 'symbol') {
+    throw new Error(`@dbField kind specified by string or symbol is not support since 1.0.0`);
+  }
 
-  return typeof wrapper === 'function' ? wrapper(name) : name;
+  return {
+    table: tableName,
+    name,
+    wrapper: kind?.readQuery,
+  }
 }
 
 function validateModel<T>(_: Partial<T>, tableInfo: ITableInfo): void {
@@ -141,21 +141,21 @@ function having<T>(this: IBuildableSelectQuery, _: HavingBuilder<T>) {
 
 function columns<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | ColumnsBuilder<T>) {
   this._columns = typeof _ === 'function'
-    ? _(proxy<T>(this._table))
+    ? _(proxy<T>(this._table)) as IExpression[]
     : columnsOf(_, this._table);
   return this;
 }
 
 function orderBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | OrderBuilder<T>) {
   this._orderBy = typeof _ === 'function'
-    ? _(proxy<T>(this._table))
+    ? _(proxy<T>(this._table)) as IReference[]
     : columnsOf(_, this._table);
   return this;
 }
 
 function groupBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | GroupByBuilder<T>) {
   this._groupBy = typeof _ === 'function'
-    ?  _(proxy<T>(this._table))
+    ?  _(proxy<T>(this._table)) as any as IReference[]
     : columnsOf(_, this._table);
   return this;
 }
