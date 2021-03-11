@@ -27,7 +27,7 @@ describe('Operators should return correct intermediate query', () => {
         const result = of(testTable, field);
 
         expect(result).toBeInstanceOf(ColumnWrapper);
-        expect(result._column).toBe(`${testTable.tableName}.${field}`)
+        expect(result._column).toStrictEqual({table: testTable.tableName, name: 'test_field'})
     });
 
     it('Of operator should throw error if given filed does not exists', () => {
