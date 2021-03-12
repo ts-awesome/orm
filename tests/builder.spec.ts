@@ -1,9 +1,9 @@
-import { alias, and, asc, Delete, desc, Insert, max, Select, sum, Update, Upsert } from '../src';
+import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSymbol, Update, Upsert} from '../src';
 import { Employee, Person } from './models';
-import { TableRef } from '../src/builder';
+import { TableRef, readModelMeta } from '../src/builder';
 
 
-const tableInfo = (Person.prototype as any).tableInfo;
+const tableInfo = readModelMeta(Person);
 const tableName = tableInfo.tableName;
 const person: InstanceType<typeof Person> = {id: 1, name: 'Name', age: 18, city: 'City'};
 
@@ -47,7 +47,7 @@ describe('Select', () => {
   it('Joins', () => {
     const enum joinTypes {inner = 'INNER', left = 'LEFT', right = 'RIGHT', full = 'FULL OUTER'}
 
-    const employeeTableInfo = (Employee.prototype as any).tableInfo;
+    const employeeTableInfo = readModelMeta(Employee);
 
     const innerJoin = Select(Person).join(Employee, ({id}, {personId}) => id.eq(personId));
     const leftJoin = Select(Person).joinLeft(Employee, ({id}, {personId}) => id.eq(personId));
@@ -55,7 +55,7 @@ describe('Select', () => {
     const fullJoin = Select(Person).joinFull(Employee, ({id}, {personId}) => id.eq(personId));
 
     const innerJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: undefined,
       _type: joinTypes.inner,
       _condition: {
@@ -64,7 +64,7 @@ describe('Select', () => {
       }
     }];
     const leftJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: undefined,
       _type: joinTypes.left,
       _condition: {
@@ -73,7 +73,7 @@ describe('Select', () => {
       }
     }];
     const rightJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: undefined,
       _type: joinTypes.right,
       _condition: {
@@ -82,7 +82,7 @@ describe('Select', () => {
       }
     }];
     const fullJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: undefined,
       _type: joinTypes.full,
       _condition: {
@@ -99,7 +99,7 @@ describe('Select', () => {
 
   it('Joins with alias', () => {
     const tableRef = new TableRef(Employee);
-    const employeeTableInfo = (Employee.prototype as any).tableInfo;
+    const employeeTableInfo = readModelMeta(Employee);
 
     const enum joinTypes {inner = 'INNER', left = 'LEFT', right = 'RIGHT', full = 'FULL OUTER'}
 
@@ -109,7 +109,7 @@ describe('Select', () => {
     const fullJoin = Select(Person).joinFull(Employee, tableRef, ({id}, {personId}) => id.eq(personId));
 
     const innerJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: tableRef.tableName,
       _type: joinTypes.inner,
       _condition: {
@@ -118,7 +118,7 @@ describe('Select', () => {
       }
     }];
     const leftJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: tableRef.tableName,
       _type: joinTypes.left,
       _condition: {
@@ -127,7 +127,7 @@ describe('Select', () => {
       }
     }];
     const rightJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: tableRef.tableName,
       _type: joinTypes.right,
       _condition: {
@@ -136,7 +136,7 @@ describe('Select', () => {
       }
     }];
     const fullJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: tableRef.tableName,
       _type: joinTypes.full,
       _condition: {
@@ -164,7 +164,7 @@ describe('Select', () => {
   });
 
   it('Having', () => {
-    const employeeTableName = (Employee.prototype as any).tableInfo.tableName;
+    const employeeTableName = readModelMeta(Employee).tableName;
     const salaryRate = 2000;
     const query = Select(Employee)
       .columns(({salary}) => [sum(salary)])
@@ -252,9 +252,7 @@ describe('Insert', () => {
 describe('Upsert', () => {
 
   const infoMock = {
-    prototype: {
-      tableInfo: {}
-    }
+    [TableMetadataSymbol]: {}
   };
 
   it('Check query info', () => {

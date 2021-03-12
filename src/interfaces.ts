@@ -1,4 +1,5 @@
 import { IExpression, IJoin, IOrderBy, IReference } from './intermediate';
+import {TableMetadataSymbol} from "./symbols";
 
 export type DbValueType = string | number | boolean | Date | null | undefined;
 
@@ -9,6 +10,7 @@ export interface IDbField<T = any> {
   writer?(value: T): DbValueType;
 }
 
+declare type Class = new (...args: any) => any;
 export interface IFieldInfo {
   primaryKey?: true;
   autoIncrement?: true;
@@ -21,8 +23,9 @@ export interface IFieldInfo {
   sensitive?: true;
   default?: DbValueType;
   kind?: IDbField;
-
-  getValue(rec: any): DbValueType;
+  nullable?: true;
+  model?: Class | [Class];
+  getValue(x: any): DbValueType;
 }
 
 export interface IIndexInfo<T extends new (...args: any) => any> {
@@ -226,28 +229,21 @@ export interface IBuildableQueryCompiler<T> {
   compile(query: IBuildableQuery): T
 }
 
-export type ICountData = { [key: string]: number};
-export type IQueryData = {[key: string]: DbValueType}
+export type IQueryData = { [key: string]: DbValueType }
 
-export interface IQueryExecutor<T> {
-  execute(query: T): Promise<IQueryData[]>;
+export interface IQueryExecutor<T, R = IQueryData> {
+  execute(query: T): Promise<ReadonlyArray<R>>;
+  execute(query: T, count: true): Promise<number>;
+  execute<X extends TableMetaProvider<any>>(query: T, Model: X, sensitive?: boolean): Promise<ReadonlyArray<InstanceType<X>>>;
 }
 
-export interface IDbDataReader<T> {
-  readOne(data: IQueryData[]): T | undefined;
-  readOneOrRejectNotFound(data: IQueryData[]): T;
-  readMany(data: IQueryData[]): ReadonlyArray<T>;
-  readManyOrRejectNotFound(dbResult: IQueryData[]): ReadonlyArray<T>;
-  readCount(data: ICountData[]): number;
-}
-
-export interface ITransaction<TQuery> extends IQueryExecutor<TQuery> {
+export interface ITransaction<TQuery, R = IQueryData> extends IQueryExecutor<TQuery, R> {
   readonly finished: boolean;
   commit(): Promise<void>;
   rollback(): Promise<void>;
 }
 
-export interface IQueryDriver<TQuery> extends IQueryExecutor<TQuery> {
-  begin(): Promise<ITransaction<TQuery>>;
+export interface IQueryDriver<TQuery, R = IQueryData> extends IQueryExecutor<TQuery, R> {
+  begin(): Promise<ITransaction<TQuery, R>>;
   end(): Promise<void>;
 }

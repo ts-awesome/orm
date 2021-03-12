@@ -27,6 +27,7 @@ import {
 } from './interfaces';
 import {and} from './operators';
 import {IColumnRef, IExpression, IReference} from "./intermediate";
+import {TableMetadataSymbol} from "./symbols";
 
 export interface IExpr {
   _alias?: string
@@ -253,9 +254,9 @@ function join<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, ...ar
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
   this._joins = this._joins || [];
-  const table = (<any>_).prototype.tableInfo;
+  const table = readModelMeta(_);
   this._joins.push({
-    _table: table.tableName,
+    _tableName: table.tableName,
     _alias: alias?.tableName,
     _type: 'INNER',
     _condition: condition(proxy<X>(this._table), proxy<X>(table, undefined, alias?.tableName)) as any,
@@ -269,9 +270,9 @@ function joinLeft<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, .
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
   this._joins = this._joins || [];
-  const table = (<any>_).prototype.tableInfo;
+  const table = readModelMeta(_);
   this._joins.push({
-    _table: table.tableName,
+    _tableName: table.tableName,
     _alias: alias?.tableName,
     _type: 'LEFT',
     _condition: condition(proxy<X>(this._table), proxy<X>(table, undefined, alias?.tableName)) as any,
@@ -285,9 +286,9 @@ function joinRight<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, 
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
   this._joins = this._joins || [];
-  const table = (<any>_).prototype.tableInfo;
+  const table = readModelMeta(_);
   this._joins.push({
-    _table: table.tableName,
+    _tableName: table.tableName,
     _alias: alias?.tableName,
     _type: 'RIGHT',
     _condition: condition(proxy<X>(this._table), proxy<X>(table, undefined, alias?.tableName)) as any,
@@ -301,9 +302,9 @@ function joinFull<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, .
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
   this._joins = this._joins || [];
-  const table = (<any>_).prototype.tableInfo;
+  const table = readModelMeta(_);
   this._joins.push({
-    _table: table.tableName,
+    _tableName: table.tableName,
     _alias: alias?.tableName,
     _type: 'FULL OUTER',
     _condition: condition(proxy<X>(this._table), proxy<X>(table, undefined, alias?.tableName)) as any,
@@ -316,7 +317,7 @@ export class TableRef<T extends TableMetaProvider<T>> implements ITableRef<T> {
   private readonly alias: string;
 
   constructor(private table: any) {
-    this.info = table.prototype.tableInfo;
+    this.info = readModelMeta(table);
     this.alias = `${this.info.tableName}_${Date.now().toString(36)}`;
   }
 
@@ -337,10 +338,17 @@ export class TableRef<T extends TableMetaProvider<T>> implements ITableRef<T> {
   }
 }
 
+export function readModelMeta(Model: any): ITableInfo {
+  if (Model[TableMetadataSymbol] == null) {
+    throw new Error(`Model ${Model?.name ?? JSON.stringify(Model)} expected to be annotated with @dbTable`);
+  }
+  return Model[TableMetadataSymbol] ?? {};
+}
+
 export function Select<T extends TableMetaProvider<T>>(_: T, distinct = false): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
   return {
     _type: 'SELECT',
-    _table: (<any>_).prototype.tableInfo,
+    _table: readModelMeta(_),
     _distinct: distinct,
     columns,
     join,
@@ -359,7 +367,7 @@ export function Select<T extends TableMetaProvider<T>>(_: T, distinct = false): 
 export function Insert<T extends TableMetaProvider<T>>(_: T): IInsertBuilder<InstanceType<T>> & IBuildableInsertQuery {
   return {
     _type: 'INSERT',
-    _table: (<any>_).prototype.tableInfo,
+    _table: readModelMeta(_),
     values,
   } as IBuildableInsertQuery as any;
 }
@@ -367,7 +375,7 @@ export function Insert<T extends TableMetaProvider<T>>(_: T): IInsertBuilder<Ins
 export function Upsert<T extends TableMetaProvider<T>>(_: T): IUpsertBuilder<InstanceType<T>> & IBuildableUpsertQuery {
   return {
     _type: 'UPSERT',
-    _table: (<any>_).prototype.tableInfo,
+    _table: readModelMeta(_),
     _limit: 1,
     values,
     where,
@@ -379,7 +387,7 @@ export function Upsert<T extends TableMetaProvider<T>>(_: T): IUpsertBuilder<Ins
 export function Update<T extends TableMetaProvider<T>>(_: T): IUpdateBuilder<InstanceType<T>> & IBuildableUpdateQuery {
   return {
     _type: 'UPDATE',
-    _table: (<any>_).prototype.tableInfo,
+    _table: readModelMeta(_),
     values,
     where,
     limit,
@@ -389,7 +397,7 @@ export function Update<T extends TableMetaProvider<T>>(_: T): IUpdateBuilder<Ins
 export function Delete<T extends TableMetaProvider<T>>(_: T): IDeleteBuilder<InstanceType<T>> & IBuildableDeleteQuery {
   return {
     _type: 'DELETE',
-    _table: (<any>_).prototype.tableInfo,
+    _table: readModelMeta(_),
     where,
     limit,
   } as IBuildableDeleteQuery as any;

@@ -1,15 +1,18 @@
 import {ITableInfo, IFieldInfo, WhereBuilder} from './interfaces';
+import {TableMetadataSymbol} from "./symbols";
 
-function ensureTableInfo(proto: {tableInfo?: ITableInfo}): ITableInfo {
-  if (!proto.tableInfo) {
-    proto.tableInfo = {
+import {readable} from "@ts-awesome/model-reader";
+
+function ensureTableInfo(proto: any): ITableInfo {
+  if (typeof proto[TableMetadataSymbol] !== 'object') {
+    proto[TableMetadataSymbol] = {
       tableName: '',
       fields: new Map<string, IFieldInfo>(),
       indexes: []
     };
   }
 
-  return proto.tableInfo;
+  return proto[TableMetadataSymbol];
 }
 
 interface IDBIndexMeta<T> {
@@ -32,7 +35,7 @@ export function dbTable<T>(...args: any): ClassDecorator {
   return validator;
 
   function validator <TFunction extends Function>(target: TFunction): TFunction | void {
-    const tableInfo = ensureTableInfo(target.prototype);
+    const tableInfo = ensureTableInfo(target);
     tableInfo.tableName = tableName ?? target.name
       .replace(/Model$/, '')
       .toLowerCase();
@@ -64,7 +67,7 @@ export function dbField(...args: any): PropertyDecorator {
   return validator;
 
   function validator(target: Object, key: string | symbol): void {
-    const tableInfo = ensureTableInfo(target.constructor.prototype);
+    const tableInfo = ensureTableInfo(target.constructor);
     const {fields} = tableInfo;
 
     if (typeof fieldMeta !== 'string' && fieldMeta) {
@@ -75,7 +78,7 @@ export function dbField(...args: any): PropertyDecorator {
         name,
         primaryKey,
         kind,
-        getValue(rec: any) { return rec[key] },
+        getValue: x => x[key],
       });
       if (primaryKey) {
         tableInfo.primaryKey = name;
@@ -84,13 +87,16 @@ export function dbField(...args: any): PropertyDecorator {
     } else {
       fields.set(key.toString(), {
         name: fieldMeta || key,
-        getValue(rec: any) { return rec[key] },
+        getValue: x => x[key],
       });
     }
+
+    const {model, nullable = false} = fields.get(key.toString())!;
+    readable(model as any, nullable as any)(target, key);
   }
 }
 
-interface IDBManyFieldMeta {
+interface IDBManyFieldMeta extends Pick<IFieldInfo, 'nullable'|'model'|'kind'>{
   table: string;
   keyField: string;
   valueField: string;
@@ -99,15 +105,16 @@ interface IDBManyFieldMeta {
 // noinspection JSUnusedGlobalSymbols
 export function dbManyField(fieldMeta: IDBManyFieldMeta): PropertyDecorator {
   return function (target: Object, key: string | symbol): void {
-    const {fields} = ensureTableInfo(target.constructor.prototype);
-    let {valueField, keyField, table}: IDBManyFieldMeta = fieldMeta;
+    const {fields} = ensureTableInfo(target.constructor);
+    let {valueField, keyField, table, ...rest}: IDBManyFieldMeta = fieldMeta;
     fields.set(key.toString(), {
+      ...rest,
       name: valueField,
       relatedTo: {
         keyField,
-        tableName: table
+        tableName: table,
       },
-      getValue: (rec: any) => rec[key]
+      getValue: x => x[key],
     });
   };
 }
