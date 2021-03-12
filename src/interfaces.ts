@@ -1,3 +1,5 @@
+import { IExpression, IJoin, IOrderBy, IReference } from './intermediate';
+
 export type DbValueType = string | number | boolean | Date | null | undefined;
 
 export interface IDbField<T = any> {
@@ -23,7 +25,7 @@ export interface IFieldInfo {
   getValue(rec: any): DbValueType;
 }
 
-export interface IIndexInfo<T> {
+export interface IIndexInfo<T extends new (...args: any) => any> {
   name: string;
   keyFields: string[];
   where?: WhereBuilder<T>;
@@ -38,10 +40,7 @@ export interface ITableInfo {
 }
 
 export type TableMetaProvider<T> = {
-  new (...args: any[]): T
-  prototype: {
-    [P in keyof T]: any | any[] | null | undefined
-  }
+  new (...args: any): any;
 }
 
 export type Queryable<T> = {
@@ -94,7 +93,7 @@ export interface IOperandable<T=any> {
 export type WhereBuilder<T> = (model: Queryable<T>) => IOperandable<boolean> | boolean;
 export type HavingBuilder<T> = (model: Queryable<T>) => IOperandable<boolean> | boolean;
 export type ValuesBuilder<T> = (model: Queryable<T>) => Values<T>;
-export type JoinBuilder<T,X> = (root: Queryable<T>, other: Queryable<X>) => IOperandable<boolean> | boolean;
+export type JoinBuilder<T, X> = (root: Queryable<T>, other: Queryable<X>) => IOperandable<boolean> | boolean;
 export type OrderBuilder<T> = (x: Columns<T>) => (Column<T>|Order|IOperandable<any>)[];
 export type GroupByBuilder<T> = (x: Columns<T>) => Column<T>[];
 export type ColumnsBuilder<T> = (x: Queryable<T>) => (Column<T>|IOperandable<any>)[];
@@ -106,38 +105,27 @@ export type Columns<T> = {
 
 export interface Order {}
 
-export interface IContainer {
-  get<T>(serviceIdentifier: string | symbol): T;
-  getTagged<T>(serviceIdentifier: string | symbol, key: string | number | symbol, value: any): T;
-  getNamed<T>(serviceIdentifier: string | symbol, named: string | number | symbol): T;
-  getAll<T>(serviceIdentifier: string | symbol): T[];
-  getAllTagged<T>(serviceIdentifier: string | symbol, key: string | number | symbol, value: any): T[];
-  getAllNamed<T>(serviceIdentifier: string | symbol, named: string | number | symbol): T[];
-}
-
 export interface IBuildableWherePartial {
   _table: ITableInfo
-  _kernel?: IContainer
   _where?: any[]
   _limit?: number
 }
 
 export interface IBuildableValuesPartial {
   _table: ITableInfo
-  _kernel?: IContainer
   _values?: any
 }
 
 export interface IBuildableSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
-  _kernel?: IContainer
-  _columns?: any[]
-  _joins?: any[]
-  _where?: any[]
-  _groupBy?: any[]
-  _having?: any[]
-  _orderBy?: any[]
+  _distinct?: boolean
+  _columns?: IExpression[]
+  _joins?: IJoin[]
+  _where?: IExpression[]
+  _groupBy?: IReference[]
+  _having?: IExpression[]
+  _orderBy?: IOrderBy[]
   _limit?: number
   _offset?: number
 }
@@ -145,27 +133,25 @@ export interface IBuildableSelectQuery {
 export interface IBuildableSubSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
-  _kernel?: IContainer
-  _columns?: any[]
-  _joins?: any[]
-  _where?: any[]
-  _groupBy?: any[]
-  _having?: any[]
+  _distinct?: boolean
+  _columns?: IExpression[]
+  _joins?: IJoin[]
+  _where?: IExpression[]
+  _groupBy?: IReference[]
+  _having?: IExpression[]
 }
 
 export interface IBuildableInsertQuery {
   _type: 'INSERT'
   _table: ITableInfo
-  _kernel?: IContainer
   _values?: any
 }
 
 export interface IBuildableUpsertQuery {
   _type: 'UPSERT'
   _table: ITableInfo
-  _kernel?: IContainer
   _values?: any
-  _where?: any[],
+  _where?: IExpression[]
   _conflictExp?: {
     _columns: string[],
     _where?: any[]
@@ -175,17 +161,15 @@ export interface IBuildableUpsertQuery {
 export interface IBuildableUpdateQuery {
   _type: 'UPDATE'
   _table: ITableInfo
-  _kernel?: IContainer
   _values?: any
-  _where?: any[]
+  _where?: IExpression[]
   _limit?: number
 }
 
 export interface IBuildableDeleteQuery {
   _type: 'DELETE'
   _table: ITableInfo
-  _kernel?: IContainer
-  _where?: any[]
+  _where?: IExpression[]
   _limit?: number
 }
 
@@ -202,36 +186,41 @@ export interface IValuesHandler<T> {
   values(values: Partial<T>): this
 }
 
-export interface ITableRef<T extends TableMetaProvider<InstanceType<T>>> extends ITableInfo {
+export interface ITableRef<T extends TableMetaProvider<T>> extends ITableInfo {
   readonly originalTableName: string;
 }
 
-export interface ISelectBuilder<T extends TableMetaProvider<InstanceType<T>>> extends IWhereHandler<InstanceType<T>>, IBuildableSelectQuery {
-  columns(builder: ColumnsBuilder<InstanceType<T>>): this
-  columns(list: ColumnsList<InstanceType<T>>): this
-  groupBy(builder: GroupByBuilder<InstanceType<T>>): this
-  groupBy(list: ColumnsList<InstanceType<T>>): this
-  orderBy(builder: OrderBuilder<InstanceType<T>>): this
-  orderBy(list: ColumnsList<InstanceType<T>>): this
-  having(builder: HavingBuilder<InstanceType<T>>): this
-  join<X extends TableMetaProvider<InstanceType<X>>>(Model: X, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
-  join<X extends TableMetaProvider<InstanceType<X>>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
-  joinLeft<X extends TableMetaProvider<InstanceType<X>>>(Model: X, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
-  joinLeft<X extends TableMetaProvider<InstanceType<X>>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
-  joinRight<X extends TableMetaProvider<InstanceType<X>>>(Model: X, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
-  joinRight<X extends TableMetaProvider<InstanceType<X>>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
-  joinFull<X extends TableMetaProvider<InstanceType<X>>>(Model: X, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
-  joinFull<X extends TableMetaProvider<InstanceType<X>>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<InstanceType<T>, InstanceType<X>>): this
+export interface ISelectBuilder<T> extends IWhereHandler<T> {
+  columns(builder: ColumnsBuilder<T>): this
+  columns(list: ColumnsList<T>): this
+  groupBy(builder: GroupByBuilder<T>): this
+  groupBy(list: ColumnsList<T>): this
+  orderBy(builder: OrderBuilder<T>): this
+  orderBy(list: ColumnsList<T>): this
+  having(builder: HavingBuilder<T>): this
+  join<X extends TableMetaProvider<X>>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
+  join<X extends TableMetaProvider<X>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
+  joinLeft<X extends TableMetaProvider<X>>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
+  joinLeft<X extends TableMetaProvider<X>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
+  joinRight<X extends TableMetaProvider<X>>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
+  joinRight<X extends TableMetaProvider<X>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
+  joinFull<X extends TableMetaProvider<X>>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
+  joinFull<X extends TableMetaProvider<X>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
   offset(offset: number): this
+
+  // from IWhereHandler<T> to ensure WebStorm resolves types correctly
+  where(builder: WhereBuilder<T>): this
+  where(value: Partial<T>): this
+  limit(limit: number): this
 }
 
-export interface IInsertBuilder<T> extends IValuesHandler<T>, IBuildableInsertQuery {}
+export interface IInsertBuilder<T> extends IValuesHandler<T> {}
 
-export interface IUpsertBuilder<T> extends IValuesHandler<T>, IWhereHandler<T>, IBuildableUpsertQuery {
-  conflict(_?: string): this
+export interface IUpsertBuilder<T> extends IValuesHandler<T>, IWhereHandler<T> {
+  conflict(index?: string): this
 }
-export interface IUpdateBuilder<T> extends IValuesHandler<T>, IWhereHandler<T>, IBuildableUpdateQuery {}
-export interface IDeleteBuilder<T> extends IWhereHandler<T>, IBuildableDeleteQuery {}
+export interface IUpdateBuilder<T> extends IValuesHandler<T>, IWhereHandler<T> {}
+export interface IDeleteBuilder<T> extends IWhereHandler<T> {}
 
 export interface IBuildableQueryCompiler<T> {
   compile(query: IBuildableQuery): T
@@ -247,8 +236,8 @@ export interface IQueryExecutor<T> {
 export interface IDbDataReader<T> {
   readOne(data: IQueryData[]): T | undefined;
   readOneOrRejectNotFound(data: IQueryData[]): T;
-  readMany(data: IQueryData[]): T[];
-  readManyOrRejectNotFound(dbResult: IQueryData[]): T[];
+  readMany(data: IQueryData[]): ReadonlyArray<T>;
+  readManyOrRejectNotFound(dbResult: IQueryData[]): ReadonlyArray<T>;
   readCount(data: ICountData[]): number;
 }
 

@@ -1,8 +1,9 @@
 import {IOperandable} from './interfaces';
+import {IColumnRef} from "./intermediate";
 
 //@ts-ignore
 declare class ColumnWrapper<T> implements IOperandable<T> {
-  constructor(column: string);
+  constructor(ref: IColumnRef);
 }
 
 //@ts-ignore

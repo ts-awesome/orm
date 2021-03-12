@@ -17,7 +17,7 @@
   * **`autoIncrement?`**: *`true`* - Is field auto increment (*false by default*).
   * **`default?`**: *`T | DbDefault`* - Field has default value. Specify value or indicate db column has default with DbDefault
   * **`sensitive?`**: *`true`* - Fields contains sensitive data and will be masked with undefined (*false by default*)
-  * **`kind?`**: *`IDbField | uuid | json | string | symbol`* - Field parser/serializer options
+  * **`kind?`**: *`IDbField`* - Field parser/serializer options
 
 })
 
@@ -42,7 +42,7 @@ export class UserModel {
   id: number;
 
   @dbField({
-    kind: 'uuid',
+    kind: UUID,
   })
   uid: string;
 
@@ -54,10 +54,10 @@ export class UserModel {
   })
   password: string;
 
-  @dbField()
+  @dbField
   email?: string | null;
 
-  @dbField()
+  @dbField
   type?: UserType;
 
   @dbField({
@@ -98,5 +98,5 @@ container.bind<IQueryDriver<ISqlQuery>>(Symbols.SqlQueryDriver)
 
 container
   .bind<IDbDataReader<UserModel>>(Symbols.dbReaderFor(UserModel))
-  .toConstantValue(new DbReader<UserModel>(UserModel));
+  .toConstantValue(new DbReader(UserModel));
 ```

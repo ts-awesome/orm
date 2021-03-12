@@ -96,6 +96,7 @@ interface IDBManyFieldMeta {
   valueField: string;
 }
 
+// noinspection JSUnusedGlobalSymbols
 export function dbManyField(fieldMeta: IDBManyFieldMeta): PropertyDecorator {
   return function (target: Object, key: string | symbol): void {
     const {fields} = ensureTableInfo(target.constructor.prototype);

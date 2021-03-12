@@ -53,16 +53,16 @@ export function desc<T>(value: Column<T>|IOperandable<T>): Order {
   return <any>{...(<any>value), _order: 'DESC',}
 }
 
-export function of<X extends TableMetaProvider<InstanceType<X>>, T=any>(_: X, field: keyof InstanceType<X>): IOperandable<T>;
-export function of<X extends TableMetaProvider<InstanceType<X>>, T=any>(_: ITableRef<X>, field: keyof InstanceType<X>): IOperandable<T>;
-export function of<X extends TableMetaProvider<InstanceType<X>>, T=any>(_: any, field: keyof InstanceType<X>): IOperandable<T> {
+export function of<X extends TableMetaProvider<X>, T=any>(_: X, field: keyof InstanceType<X>): IOperandable<T>;
+export function of<X extends TableMetaProvider<X>, T=any>(_: ITableRef<X>, field: keyof InstanceType<X>): IOperandable<T>;
+export function of<X extends TableMetaProvider<X>, T=any>(_: any, field: keyof InstanceType<X>): IOperandable<T> {
   const {tableName, fields} = _.prototype?.tableInfo ?? _;
 
   if (!fields.has(field)) {
     throw new Error(`Field '${field}' should be annotated with @dbField() or @dbManyField()`);
   }
   const {name} = fields.get(field)!;
-  return (new ColumnWrapper(tableName + '.' + name)) as IOperandable<T>;
+  return (new ColumnWrapper({table: tableName, name})) as IOperandable<T>;
 }
 
 export function alias<T>(expr: T | IOperandable<T>, name: string): IOperandable<T> {
