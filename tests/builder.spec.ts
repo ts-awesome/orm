@@ -1,4 +1,4 @@
-import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSymbol, Update, Upsert} from '../src';
+import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSymbol, Update, Upsert, of} from '../src';
 import { Employee, Person } from './models';
 import { TableRef, readModelMeta } from '../src/builder';
 
@@ -22,6 +22,7 @@ describe('Select', () => {
     const columnsThroughList = Select(Person).columns(['name', 'age']);
     const columnsThroughBuilder = Select(Person).columns(({name, age}) => [name, age]);
     const columnsWithAlias = Select(Person).columns(({name}) => [alias(name, nameAlias)]);
+    const columnsWithOf = Select(Person).columns(({name}) => [of(Employee, 'company')]);
     const columnsWithExpression = Select(Person).columns(({age}) => [age.mul(coefficient), max(age)]);
 
     const expectation = {
@@ -32,6 +33,9 @@ describe('Select', () => {
       alias: [
         {_alias: nameAlias, _operands: [{_column: {table: tableName, name: 'name', wrapper: undefined}}]}
       ],
+      of: [
+        {_column: {table: readModelMeta(Employee).tableName, name: 'company'}}
+      ],
       expression: [
         {_operator: '*', _operands: [{_column: {table: tableName, name: 'age', wrapper: undefined}}, coefficient]},
         {_func: 'MAX', _args: [{_column: {table: tableName, name: 'age', wrapper: undefined}}]}
@@ -41,6 +45,7 @@ describe('Select', () => {
     expect(columnsThroughList._columns).toStrictEqual(expectation.default);
     expect(columnsThroughBuilder._columns).toStrictEqual(expectation.default);
     expect(columnsWithAlias._columns).toStrictEqual(expectation.alias);
+    expect(columnsWithOf._columns).toStrictEqual(expectation.of);
     expect(columnsWithExpression._columns).toStrictEqual(expectation.expression);
   });
 
