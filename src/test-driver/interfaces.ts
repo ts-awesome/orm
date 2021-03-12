@@ -1,6 +1,6 @@
 export type Mapper = (x: CompiledTestQuery) => [];
-export type TestQuery = []
-export type TestQueryResult = [];
+export type TestQuery = any;
+export type TestQueryResult = any;
 
 export interface CompiledTestQuery {
   queryType: string;
