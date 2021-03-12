@@ -1,4 +1,4 @@
-import { dbField, dbTable, IDbField } from '../src';
+import { dbField, dbTable, IDbField } from '../dist';
 
 const UUID: IDbField = {}
 

@@ -1,4 +1,4 @@
-import { reader, IQueryData } from '../src';
+import { reader, IQueryData } from '../dist';
 import { Person } from './models';
 import { Container } from 'inversify';
 

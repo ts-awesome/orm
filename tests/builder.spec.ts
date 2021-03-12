@@ -1,6 +1,6 @@
-import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSymbol, Update, Upsert, of} from '../src';
+import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSymbol, Update, Upsert, of} from '../dist';
 import { Employee, Person } from './models';
-import { TableRef, readModelMeta } from '../src/builder';
+import { TableRef, readModelMeta } from '../dist/builder';
 
 
 const tableInfo = readModelMeta(Person);
