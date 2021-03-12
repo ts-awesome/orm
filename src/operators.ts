@@ -1,5 +1,6 @@
 import {Column, IBuildableQuery, IOperandable, Order, TableMetaProvider, ITableRef} from "./interfaces";
 import {ColumnWrapper, FunctionCall, Operandable} from "./wrappers";
+import {TableMetadataSymbol} from "./symbols";
 
 export function and(...operands: (boolean | IOperandable<boolean>)[]): IOperandable<boolean> {
   return new Operandable('AND', operands) as IOperandable<boolean>
@@ -56,7 +57,7 @@ export function desc<T>(value: Column<T>|IOperandable<T>): Order {
 export function of<X extends TableMetaProvider<X>, T=any>(_: X, field: keyof InstanceType<X>): IOperandable<T>;
 export function of<X extends TableMetaProvider<X>, T=any>(_: ITableRef<X>, field: keyof InstanceType<X>): IOperandable<T>;
 export function of<X extends TableMetaProvider<X>, T=any>(_: any, field: keyof InstanceType<X>): IOperandable<T> {
-  const {tableName, fields} = _.prototype?.tableInfo ?? _;
+  const {tableName, fields} = _[TableMetadataSymbol] ?? _;
 
   if (!fields.has(field)) {
     throw new Error(`Field '${field}' should be annotated with @dbField() or @dbManyField()`);

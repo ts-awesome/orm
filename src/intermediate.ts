@@ -46,7 +46,7 @@ export interface IJoin {
   _tableName: string;
   _condition: IExpression;
   _type: 'INNER' | 'LEFT' | 'RIGHT' | 'FULL OUTER';
-  _alias: string | undefined;
+  _alias?: string | undefined;
 }
 
 export interface IAlias {
