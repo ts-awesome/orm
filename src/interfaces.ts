@@ -186,6 +186,7 @@ export interface IValuesHandler<T> {
   values(values: Partial<T>): this
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export interface ITableRef<T extends TableMetaProvider> extends ITableInfo {
   readonly originalTableName: string;
 }

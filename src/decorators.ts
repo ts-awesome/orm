@@ -30,6 +30,7 @@ export function dbTable<TFunction extends Function>(...args: any[]): ClassDecora
     return validator<TFunction>(...(args as [TFunction]));
   }
 
+  // eslint-disable-next-line prefer-const
   [tableName, uniqueIndexes] = args;
   return validator;
 
@@ -62,6 +63,7 @@ export function dbField(...args: any[]): PropertyDecorator | void {
     return validator(...(args as [unknown, string]));
   }
 
+  // eslint-disable-next-line prefer-const
   [fieldMeta] = args;
   return validator;
 
