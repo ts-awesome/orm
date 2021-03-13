@@ -1,6 +1,6 @@
 import {IQueryData, TableMetaProvider} from "./interfaces";
 import _ from '@ts-awesome/model-reader';
-import {TableMetadataSymbol} from "./symbols";
+import {readModelMeta} from "./builder";
 
 function iterate<T, X>(x: Iterable<T>, iterator: (x, idx) => X): X[] {
   const res: X[] = [];
@@ -12,20 +12,44 @@ function iterate<T, X>(x: Iterable<T>, iterator: (x, idx) => X): X[] {
 }
 
 export function reader(data: ReadonlyArray<IQueryData>): IQueryData[];
-export function reader(data: ReadonlyArray<IQueryData>, count: true): number;
+export function reader(data: ReadonlyArray<IQueryData>, scalar: true): number;
 export function reader<X extends TableMetaProvider>(data: ReadonlyArray<IQueryData>, Model: X, sensitive?: boolean): ReadonlyArray<InstanceType<X>>;
 export function reader<X extends TableMetaProvider>(data: ReadonlyArray<IQueryData>, Model?: true | X, readSensitive = false): any{
   if (Model === true) {
-    return readCount(data);
+    return readScalar(data);
   }
 
   if (Model == null) {
     return data;
   }
 
+  return readModel(Model, data, readSensitive);
+}
+
+function readScalar(data: ReadonlyArray<IQueryData>): number {
+  if (data.length <= 0) {
+    return 0;
+  }
+
+  const first = data[0];
+  const keys = Object.keys(first);
+  if (keys.length <= 0) {
+    return 0;
+  }
+
+  const raw: any = first[keys[0]];
+  const count = parseInt(raw);
+  if (isNaN(count)) {
+    throw new Error(`Can't read count value from db. Invalid Count ${raw}`);
+  }
+
+  return count;
+}
+
+function readModel<X extends TableMetaProvider>(Model: X, data: ReadonlyArray<IQueryData>, readSensitive: boolean) {
   const colPropMap = {};
-  const {fields = new Map()} = Model.prototype[TableMetadataSymbol] ?? {};
-  fields.forEach(({name}, propName) => {
+  const {fields} = readModelMeta(Model, false);
+  fields?.forEach(({name}, propName) => {
     colPropMap[name] = propName;
   });
 
@@ -58,24 +82,4 @@ export function reader<X extends TableMetaProvider>(data: ReadonlyArray<IQueryDa
   })
 
   return _(processed, [Model], true);
-}
-
-function readCount(data: ReadonlyArray<IQueryData>): number {
-  if (data.length <= 0) {
-    return 0;
-  }
-
-  const first = data[0];
-  const keys = Object.keys(first);
-  if (keys.length <= 0) {
-    return 0;
-  }
-
-  const raw: any = first[keys[0]];
-  const count = parseInt(raw);
-  if (isNaN(count)) {
-    throw new Error(`Can't read count value from db. Invalid Count ${raw}`);
-  }
-
-  return count;
 }

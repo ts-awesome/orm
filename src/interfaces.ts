@@ -231,7 +231,7 @@ export type IQueryData = { [key: string]: DbValueType }
 
 export interface IQueryExecutor<T, R = IQueryData> {
   execute(query: T): Promise<ReadonlyArray<R>>;
-  execute(query: T, count: true): Promise<number>;
+  execute(query: T, scalar: true): Promise<number>;
   execute<X extends TableMetaProvider>(query: T, Model: X, sensitive?: boolean): Promise<ReadonlyArray<InstanceType<X>>>;
 }
 

@@ -339,8 +339,8 @@ export class TableRef<T extends TableMetaProvider> implements ITableRef<T> {
   }
 }
 
-export function readModelMeta<T extends TableMetaProvider>(Model: T): ITableInfo {
-  if (Model[TableMetadataSymbol] == null) {
+export function readModelMeta<T extends TableMetaProvider>(Model: T, required = true): ITableInfo {
+  if (Model[TableMetadataSymbol] == null && required) {
     throw new Error(`Model ${Model?.name ?? JSON.stringify(Model)} expected to be annotated with @dbTable`);
   }
   return Model[TableMetadataSymbol] ?? {};
