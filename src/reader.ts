@@ -13,8 +13,8 @@ function iterate<T, X>(x: Iterable<T>, iterator: (x, idx) => X): X[] {
 
 export function reader(data: ReadonlyArray<IQueryData>): IQueryData[];
 export function reader(data: ReadonlyArray<IQueryData>, count: true): number;
-export function reader<X extends TableMetaProvider<any>>(data: ReadonlyArray<IQueryData>, Model: X, sensitive?: boolean): ReadonlyArray<InstanceType<X>>;
-export function reader<X extends TableMetaProvider<any>>(data: ReadonlyArray<IQueryData>, Model?: true | X, readSensitive = false): any{
+export function reader<X extends TableMetaProvider>(data: ReadonlyArray<IQueryData>, Model: X, sensitive?: boolean): ReadonlyArray<InstanceType<X>>;
+export function reader<X extends TableMetaProvider>(data: ReadonlyArray<IQueryData>, Model?: true | X, readSensitive = false): any{
   if (Model === true) {
     return readCount(data);
   }
@@ -33,7 +33,7 @@ export function reader<X extends TableMetaProvider<any>>(data: ReadonlyArray<IQu
     const res = {};
 
     Object.keys(row).forEach(col => {
-      let propName = colPropMap[col];
+      const propName = colPropMap[col];
       const value = row[col];
       if (!propName) {
         res[col] = value;
@@ -72,7 +72,7 @@ function readCount(data: ReadonlyArray<IQueryData>): number {
   }
 
   const raw: any = first[keys[0]];
-  let count = parseInt(raw);
+  const count = parseInt(raw);
   if (isNaN(count)) {
     throw new Error(`Can't read count value from db. Invalid Count ${raw}`);
   }

@@ -1,5 +1,4 @@
 import { IExpression, IJoin, IOrderBy, IReference } from './intermediate';
-import {TableMetadataSymbol} from "./symbols";
 
 export type DbValueType = string | number | boolean | Date | null | undefined;
 
@@ -28,7 +27,7 @@ export interface IFieldInfo {
   getValue(x: any): DbValueType;
 }
 
-export interface IIndexInfo<T extends new (...args: any) => any> {
+export interface IIndexInfo<T extends TableMetaProvider> {
   name: string;
   keyFields: string[];
   where?: WhereBuilder<T>;
@@ -42,9 +41,7 @@ export interface ITableInfo {
   indexes?: IIndexInfo<any>[];
 }
 
-export type TableMetaProvider<T> = {
-  new (...args: any): any;
-}
+export type TableMetaProvider<T = any> = new (...args: any) => T;
 
 export type Queryable<T> = {
   readonly [P in keyof T]: IOperandable<T[P]>;
@@ -69,13 +66,13 @@ export interface IOperandable<T=any> {
   between(min: T | IOperandable<T>, max: T | IOperandable<T>): boolean;
 }
 
-type ElementType<T> = T extends any[] ? T[number] : T;
+export type ElementType<T> = T extends any[] ? T[number] : T;
 export interface IOperandable<T> {
   in(value: T[] | Iterable<T> | IOperandable<T[]>): boolean;
   has(value: ElementType<T> | IOperandable<ElementType<T>>): boolean
 }
 
-export interface IOperandable<T=any> {
+export interface IOperandable {
   like(value: string): boolean;
 }
 
@@ -189,7 +186,7 @@ export interface IValuesHandler<T> {
   values(values: Partial<T>): this
 }
 
-export interface ITableRef<T extends TableMetaProvider<T>> extends ITableInfo {
+export interface ITableRef<T extends TableMetaProvider> extends ITableInfo {
   readonly originalTableName: string;
 }
 
@@ -201,14 +198,14 @@ export interface ISelectBuilder<T> extends IWhereHandler<T> {
   orderBy(builder: OrderBuilder<T>): this
   orderBy(list: ColumnsList<T>): this
   having(builder: HavingBuilder<T>): this
-  join<X extends TableMetaProvider<X>>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
-  join<X extends TableMetaProvider<X>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
-  joinLeft<X extends TableMetaProvider<X>>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
-  joinLeft<X extends TableMetaProvider<X>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
-  joinRight<X extends TableMetaProvider<X>>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
-  joinRight<X extends TableMetaProvider<X>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
-  joinFull<X extends TableMetaProvider<X>>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
-  joinFull<X extends TableMetaProvider<X>>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
+  join<X extends TableMetaProvider>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
+  join<X extends TableMetaProvider>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
+  joinLeft<X extends TableMetaProvider>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
+  joinLeft<X extends TableMetaProvider>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
+  joinRight<X extends TableMetaProvider>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
+  joinRight<X extends TableMetaProvider>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
+  joinFull<X extends TableMetaProvider>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
+  joinFull<X extends TableMetaProvider>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
   offset(offset: number): this
 
   // from IWhereHandler<T> to ensure WebStorm resolves types correctly
@@ -234,7 +231,7 @@ export type IQueryData = { [key: string]: DbValueType }
 export interface IQueryExecutor<T, R = IQueryData> {
   execute(query: T): Promise<ReadonlyArray<R>>;
   execute(query: T, count: true): Promise<number>;
-  execute<X extends TableMetaProvider<any>>(query: T, Model: X, sensitive?: boolean): Promise<ReadonlyArray<InstanceType<X>>>;
+  execute<X extends TableMetaProvider>(query: T, Model: X, sensitive?: boolean): Promise<ReadonlyArray<InstanceType<X>>>;
 }
 
 export interface ITransaction<TQuery, R = IQueryData> extends IQueryExecutor<TQuery, R> {

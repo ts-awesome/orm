@@ -52,7 +52,7 @@ class CompilerWrapper implements CompiledTestQuery {
 @injectable()
 export class TestCompiler implements IBuildableQueryCompiler<TestQuery> {
   private _mapper: Mapper;
-  private queryCounter: number = 0;
+  private queryCounter = 0;
 
   compile(query: IBuildableQuery): TestQuery {
     return this._mapper(new CompilerWrapper(query, ++this.queryCounter));

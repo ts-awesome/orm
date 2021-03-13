@@ -1,4 +1,4 @@
-import { IBuildableSubSelectQuery, ITableInfo } from './interfaces';
+import { IBuildableSubSelectQuery } from './interfaces';
 
 export interface IColumnRef {
   table?: string;

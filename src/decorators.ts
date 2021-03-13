@@ -23,12 +23,11 @@ interface IDBIndexMeta<T> {
 }
 
 export function dbTable<TFunction extends Function>(target: TFunction): TFunction | void;
-export function dbTable<T>(tableName?: string, uniqueIndexes?: IDBIndexMeta<T>[]): ClassDecorator;
-export function dbTable<T>(...args: any): ClassDecorator {
+export function dbTable<T>(tableName?: string, uniqueIndexes?: readonly IDBIndexMeta<T>[]): ClassDecorator;
+export function dbTable<TFunction extends Function>(...args: any[]): ClassDecorator | TFunction | void {
   let tableName, uniqueIndexes;
   if (args.length > 0 && typeof args[0] === 'function') {
-    // @ts-ignore
-    return validator(...args);
+    return validator<TFunction>(...(args as [TFunction]));
   }
 
   [tableName, uniqueIndexes] = args;
@@ -39,14 +38,15 @@ export function dbTable<T>(...args: any): ClassDecorator {
     tableInfo.tableName = tableName ?? target.name
       .replace(/Model$/, '')
       .toLowerCase();
-    uniqueIndexes?.forEach(ui => {
-      tableInfo.indexes!.push({
+
+    for(const ui of uniqueIndexes ?? []) {
+      tableInfo.indexes?.push({
         name: ui.name,
         keyFields: ui.fields,
         where: ui.where,
         default: ui.default || false,
       });
-    });
+    }
   }
 }
 
@@ -56,11 +56,10 @@ interface IDBFieldMeta extends Omit<IFieldInfo, 'getValue' | 'relatedTo' | 'name
 
 export function dbField(target: any, key: string): void;
 export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator;
-export function dbField(...args: any): PropertyDecorator {
+export function dbField(...args: any[]): PropertyDecorator | void {
   let fieldMeta;
   if (args.length > 1 && typeof args[1] === 'string') {
-    // @ts-ignore
-    return validator(...args);
+    return validator(...(args as [unknown, string]));
   }
 
   [fieldMeta] = args;
@@ -71,8 +70,7 @@ export function dbField(...args: any): PropertyDecorator {
     const {fields} = tableInfo;
 
     if (typeof fieldMeta !== 'string' && fieldMeta) {
-      let {name, primaryKey, kind, ...rest}: IDBFieldMeta = fieldMeta;
-      name = name ?? (typeof key === 'string' ? key : key.toString());
+      const {name = key.toString(), primaryKey, kind, ...rest}: IDBFieldMeta = fieldMeta;
       fields.set(key.toString(), {
         ...rest,
         name,
@@ -91,7 +89,7 @@ export function dbField(...args: any): PropertyDecorator {
       });
     }
 
-    const {model, nullable = false} = fields.get(key.toString())!;
+    const {model, nullable = false} = fields.get(key.toString());
     readable(model as any, nullable as any)(target, key);
   }
 }
@@ -106,7 +104,7 @@ interface IDBManyFieldMeta extends Pick<IFieldInfo, 'nullable'|'model'|'kind'>{
 export function dbManyField(fieldMeta: IDBManyFieldMeta): PropertyDecorator {
   return function (target: Object, key: string | symbol): void {
     const {fields} = ensureTableInfo(target.constructor);
-    let {valueField, keyField, table, ...rest}: IDBManyFieldMeta = fieldMeta;
+    const {valueField, keyField, table, ...rest}: IDBManyFieldMeta = fieldMeta;
     fields.set(key.toString(), {
       ...rest,
       name: valueField,

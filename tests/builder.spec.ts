@@ -22,7 +22,7 @@ describe('Select', () => {
     const columnsThroughList = Select(Person).columns(['name', 'age']);
     const columnsThroughBuilder = Select(Person).columns(({name, age}) => [name, age]);
     const columnsWithAlias = Select(Person).columns(({name}) => [alias(name, nameAlias)]);
-    const columnsWithOf = Select(Person).columns(({name}) => [of(Employee, 'company')]);
+    const columnsWithOf = Select(Person).columns(() => [of(Employee, 'company')]);
     const columnsWithExpression = Select(Person).columns(({age}) => [age.mul(coefficient), max(age)]);
 
     const expectation = {

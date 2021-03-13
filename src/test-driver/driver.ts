@@ -10,7 +10,8 @@ export class TestDriver extends TestExecutor implements IQueryDriver<TestQuery, 
     return new TestTransaction();
   }
 
-  public async end(): Promise<void> {
+  public end(): Promise<void> {
+    return Promise.resolve()
   }
 
 }

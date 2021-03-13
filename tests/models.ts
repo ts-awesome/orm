@@ -15,25 +15,14 @@ export class Person {
   })
   uid?: string;
 
-  @dbField
-  name!: string;
-
-  @dbField
-  age!: number;
-
-  @dbField
-  city!: string;
+  @dbField name!: string;
+  @dbField age!: number;
+  @dbField city!: string;
 }
 
 @dbTable('Employee')
 export class Employee {
-
-  @dbField
-  personId!: number;
-
-  @dbField
-  company!: string;
-
-  @dbField
-  salary!: number;
+  @dbField personId!: number;
+  @dbField company!: string;
+  @dbField salary!: number;
 }

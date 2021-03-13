@@ -23,7 +23,7 @@ import {
   WhereBuilder,
   IFieldInfo,
   IBuildableUpsertQuery,
-  ITableRef, IBuildableDeleteQuery, IBuildableUpdateQuery, IBuildableInsertQuery,
+  ITableRef, IBuildableDeleteQuery, IBuildableUpdateQuery, IBuildableInsertQuery, IIndexInfo,
 } from './interfaces';
 import {and} from './operators';
 import {IColumnRef, IExpression, IReference} from "./intermediate";
@@ -38,7 +38,7 @@ export interface IExpr {
   _operands?: IExpr[] | [IBuildableQuery]
 }
 
-function proxy<T>({tableName: originalTableName, fields, primaryKey}: ITableInfo, ignoreTableName?: boolean, alias?: string): any {
+function proxy({tableName: originalTableName, fields, primaryKey}: ITableInfo, ignoreTableName?: boolean, alias?: string): any {
   return new Proxy({}, {
     get(_, property: string) {
       const tableName = alias ?? originalTableName;
@@ -47,7 +47,7 @@ function proxy<T>({tableName: originalTableName, fields, primaryKey}: ITableInfo
         throw new Error(`Field '${property}' should be annotated with @dbField() or @dbManyField()`);
       }
 
-      const {relatedTo, name} = fields.get(property)!;
+      const {relatedTo, name} = fields.get(property);
       if (!relatedTo) {
         const ref = resolveColumn(property, {tableName, fields})
         if (ignoreTableName) {
@@ -90,7 +90,7 @@ function treeOf<T>(_: Partial<T>, tableInfo: ITableInfo): any {
 
 function columnsOf<T>(_: ColumnsList<T>, {tableName, fields}: ITableInfo): IReference[] {
   _.forEach(field => {
-    if (!fields.has(field as string) || fields.get(field as string)!.relatedTo) {
+    if (!fields.has(field as string) || fields.get(field as string).relatedTo) {
       throw new Error(`Field '${field}' should be decorated with @dbField`)
     }
   });
@@ -130,7 +130,7 @@ function validateFields(_: string[], tableInfo: ITableInfo): void {
 
 function where<T>(this: IBuildableWherePartial, _: Partial<T> | WhereBuilder<T>) {
   const tree = typeof _ === 'function'
-    ? (_ as WhereBuilder<T>)(proxy<T>(this._table))
+    ? (_ as WhereBuilder<T>)(proxy(this._table))
     : treeOf(_, this._table);
   this._where = this._where || [];
   this._where.push(tree);
@@ -138,7 +138,7 @@ function where<T>(this: IBuildableWherePartial, _: Partial<T> | WhereBuilder<T>)
 }
 
 function having<T>(this: IBuildableSelectQuery, _: HavingBuilder<T>) {
-  const tree = _(proxy<T>(this._table)) as any;
+  const tree = _(proxy(this._table)) as any;
   this._having = this._having || [];
   this._having.push(tree);
   return this;
@@ -146,33 +146,34 @@ function having<T>(this: IBuildableSelectQuery, _: HavingBuilder<T>) {
 
 function columns<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | ColumnsBuilder<T>) {
   this._columns = typeof _ === 'function'
-    ? _(proxy<T>(this._table)) as IExpression[]
+    ? _(proxy(this._table)) as IExpression[]
     : columnsOf(_, this._table);
   return this;
 }
 
 function orderBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | OrderBuilder<T>) {
   this._orderBy = typeof _ === 'function'
-    ? _(proxy<T>(this._table)) as IReference[]
+    ? _(proxy(this._table)) as IReference[]
     : columnsOf(_, this._table);
   return this;
 }
 
 function groupBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | GroupByBuilder<T>) {
   this._groupBy = typeof _ === 'function'
-    ?  _(proxy<T>(this._table)) as any as IReference[]
+    ?  _(proxy(this._table)) as any as IReference[]
     : columnsOf(_, this._table);
   return this;
 }
 
 function values<T>(this: IBuildableValuesPartial, _: Partial<T> | ValuesBuilder<T>) {
   if (typeof _ === 'function') {
-    this._values = (_ as ValuesBuilder<T>)(proxy<T>(this._table));
+    this._values = (_ as ValuesBuilder<T>)(proxy(this._table));
   } else {
     validateModel(_, this._table);
     this._values = Object
       .keys(_)
-      .map(prop => this._table.fields.get(prop)!)
+      .filter(prop => this._table.fields.has(prop))
+      .map(prop => this._table.fields.get(prop))
       .reduce((p: any, {getValue, kind, name}: IFieldInfo) => {
         let value = getValue(_);
         let wrapper: any = undefined;
@@ -215,11 +216,11 @@ function conflict<T>(this: IBuildableUpsertQuery, _?: string) {
     }
 
     validateFields(index.keyFields, this._table);
-    _columns = index.keyFields.map(prop => this._table.fields.get(prop)!.name);
+    _columns = index.keyFields.map(prop => this._table.fields.get(prop)?.name);
 
     if (index.where) {
       const tree = typeof index.where === 'function'
-        ? (index.where as WhereBuilder<T>)(proxy<T>(this._table, true))
+        ? (index.where as WhereBuilder<T>)(proxy(this._table, true))
         : treeOf(index.where, this._table);
       _where = [tree];
     }
@@ -238,7 +239,7 @@ function offset(this: IBuildableSelectQuery, offset: number) {
   return this;
 }
 
-function parseJoinArgs<X extends TableMetaProvider<X>>(...args: any[]): [X, ITableRef<X> | undefined, JoinBuilder<any, InstanceType<X>>] {
+function parseJoinArgs<X extends TableMetaProvider>(...args: any[]): [X, ITableRef<X> | undefined, JoinBuilder<any, InstanceType<X>>] {
   if (args.length === 2) {
     args = [args[0], undefined, args[1]];
   }
@@ -248,9 +249,9 @@ function parseJoinArgs<X extends TableMetaProvider<X>>(...args: any[]): [X, ITab
   throw new Error('Expected 2 or 3 arguments, got ' + args.length);
 }
 
-function join<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
-function join<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
-function join<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, ...args: any[]) {
+function join<X extends TableMetaProvider>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
+function join<X extends TableMetaProvider>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
+function join<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...args: any[]) {
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
   this._joins = this._joins || [];
@@ -259,14 +260,14 @@ function join<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, ...ar
     _tableName: table.tableName,
     _alias: alias?.tableName,
     _type: 'INNER',
-    _condition: condition(proxy<X>(this._table), proxy<X>(table, undefined, alias?.tableName)) as any,
+    _condition: condition(proxy(this._table), proxy(table, undefined, alias?.tableName)) as any,
   });
   return this;
 }
 
-function joinLeft<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
-function joinLeft<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
-function joinLeft<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, ...args: any[]) {
+function joinLeft<X extends TableMetaProvider>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
+function joinLeft<X extends TableMetaProvider>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
+function joinLeft<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...args: any[]) {
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
   this._joins = this._joins || [];
@@ -275,14 +276,14 @@ function joinLeft<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, .
     _tableName: table.tableName,
     _alias: alias?.tableName,
     _type: 'LEFT',
-    _condition: condition(proxy<X>(this._table), proxy<X>(table, undefined, alias?.tableName)) as any,
+    _condition: condition(proxy(this._table), proxy(table, undefined, alias?.tableName)) as any,
   });
   return this;
 }
 
-function joinRight<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
-function joinRight<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
-function joinRight<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, ...args: any[]) {
+function joinRight<X extends TableMetaProvider>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
+function joinRight<X extends TableMetaProvider>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
+function joinRight<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...args: any[]) {
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
   this._joins = this._joins || [];
@@ -291,14 +292,14 @@ function joinRight<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, 
     _tableName: table.tableName,
     _alias: alias?.tableName,
     _type: 'RIGHT',
-    _condition: condition(proxy<X>(this._table), proxy<X>(table, undefined, alias?.tableName)) as any,
+    _condition: condition(proxy(this._table), proxy(table, undefined, alias?.tableName)) as any,
   });
   return this;
 }
 
-function joinFull<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
-function joinFull<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
-function joinFull<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, ...args: any[]) {
+function joinFull<X extends TableMetaProvider>(this: IBuildableSelectQuery, _: X, condition: JoinBuilder<any, InstanceType<X>>);
+function joinFull<X extends TableMetaProvider>(this: IBuildableSelectQuery, _: X, alias: ITableRef<X>, condition: JoinBuilder<any, InstanceType<X>>);
+function joinFull<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...args: any[]) {
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
   this._joins = this._joins || [];
@@ -307,16 +308,16 @@ function joinFull<X extends TableMetaProvider<X>>(this: IBuildableSelectQuery, .
     _tableName: table.tableName,
     _alias: alias?.tableName,
     _type: 'FULL OUTER',
-    _condition: condition(proxy<X>(this._table), proxy<X>(table, undefined, alias?.tableName)) as any,
+    _condition: condition(proxy(this._table), proxy(table, undefined, alias?.tableName)) as any,
   });
   return this;
 }
 
-export class TableRef<T extends TableMetaProvider<T>> implements ITableRef<T> {
+export class TableRef<T extends TableMetaProvider> implements ITableRef<T> {
   private readonly info: ITableInfo;
   private readonly alias: string;
 
-  constructor(private table: any) {
+  constructor(private table: T) {
     this.info = readModelMeta(table);
     this.alias = `${this.info.tableName}_${Date.now().toString(36)}`;
   }
@@ -330,22 +331,22 @@ export class TableRef<T extends TableMetaProvider<T>> implements ITableRef<T> {
   public get primaryKey(): string | undefined {
     return this.info.primaryKey;
   }
-  public get fields() {
+  public get fields(): Map<string, IFieldInfo> {
     return this.info.fields;
   }
-  public get indexes() {
+  public get indexes(): IIndexInfo<T>[] {
     return this.info.indexes;
   }
 }
 
-export function readModelMeta(Model: any): ITableInfo {
+export function readModelMeta<T extends TableMetaProvider>(Model: T): ITableInfo {
   if (Model[TableMetadataSymbol] == null) {
     throw new Error(`Model ${Model?.name ?? JSON.stringify(Model)} expected to be annotated with @dbTable`);
   }
   return Model[TableMetadataSymbol] ?? {};
 }
 
-export function Select<T extends TableMetaProvider<T>>(_: T, distinct = false): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
+export function Select<T extends TableMetaProvider>(_: T, distinct = false): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
   return {
     _type: 'SELECT',
     _table: readModelMeta(_),
@@ -364,7 +365,7 @@ export function Select<T extends TableMetaProvider<T>>(_: T, distinct = false): 
   } as IBuildableSelectQuery as any;
 }
 
-export function Insert<T extends TableMetaProvider<T>>(_: T): IInsertBuilder<InstanceType<T>> & IBuildableInsertQuery {
+export function Insert<T extends TableMetaProvider>(_: T): IInsertBuilder<InstanceType<T>> & IBuildableInsertQuery {
   return {
     _type: 'INSERT',
     _table: readModelMeta(_),
@@ -372,7 +373,7 @@ export function Insert<T extends TableMetaProvider<T>>(_: T): IInsertBuilder<Ins
   } as IBuildableInsertQuery as any;
 }
 
-export function Upsert<T extends TableMetaProvider<T>>(_: T): IUpsertBuilder<InstanceType<T>> & IBuildableUpsertQuery {
+export function Upsert<T extends TableMetaProvider>(_: T): IUpsertBuilder<InstanceType<T>> & IBuildableUpsertQuery {
   return {
     _type: 'UPSERT',
     _table: readModelMeta(_),
@@ -384,7 +385,7 @@ export function Upsert<T extends TableMetaProvider<T>>(_: T): IUpsertBuilder<Ins
   } as IBuildableUpsertQuery as any;
 }
 
-export function Update<T extends TableMetaProvider<T>>(_: T): IUpdateBuilder<InstanceType<T>> & IBuildableUpdateQuery {
+export function Update<T extends TableMetaProvider>(_: T): IUpdateBuilder<InstanceType<T>> & IBuildableUpdateQuery {
   return {
     _type: 'UPDATE',
     _table: readModelMeta(_),
@@ -394,7 +395,7 @@ export function Update<T extends TableMetaProvider<T>>(_: T): IUpdateBuilder<Ins
   } as IBuildableUpdateQuery as any;
 }
 
-export function Delete<T extends TableMetaProvider<T>>(_: T): IDeleteBuilder<InstanceType<T>> & IBuildableDeleteQuery {
+export function Delete<T extends TableMetaProvider>(_: T): IDeleteBuilder<InstanceType<T>> & IBuildableDeleteQuery {
   return {
     _type: 'DELETE',
     _table: readModelMeta(_),
