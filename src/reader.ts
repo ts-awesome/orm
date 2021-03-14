@@ -14,7 +14,7 @@ function iterate<T, X>(x: Iterable<T>, iterator: (x, idx) => X): X[] {
 export function reader(data: ReadonlyArray<IQueryData>): IQueryData[];
 export function reader(data: ReadonlyArray<IQueryData>, scalar: true): number;
 export function reader<X extends TableMetaProvider>(data: ReadonlyArray<IQueryData>, Model: X, sensitive?: boolean): ReadonlyArray<InstanceType<X>>;
-export function reader<X extends TableMetaProvider>(data: ReadonlyArray<IQueryData>, Model?: true | X, readSensitive = false): any{
+export function reader<X extends TableMetaProvider>(data: ReadonlyArray<IQueryData>, Model?: true | X, sensitive = false): any{
   if (Model === true) {
     return readScalar(data);
   }
@@ -23,7 +23,7 @@ export function reader<X extends TableMetaProvider>(data: ReadonlyArray<IQueryDa
     return data;
   }
 
-  return readModel(Model, data, readSensitive);
+  return readModel(Model, data, sensitive);
 }
 
 function readScalar(data: ReadonlyArray<IQueryData>): number {
@@ -46,7 +46,7 @@ function readScalar(data: ReadonlyArray<IQueryData>): number {
   return count;
 }
 
-function readModel<X extends TableMetaProvider>(Model: X, data: ReadonlyArray<IQueryData>, readSensitive: boolean) {
+function readModel<X extends TableMetaProvider>(Model: X, data: ReadonlyArray<IQueryData>, includeSensitive: boolean) {
   const colPropMap = {};
   const {fields} = readModelMeta(Model, false);
   fields?.forEach(({name}, propName) => {
@@ -66,7 +66,7 @@ function readModel<X extends TableMetaProvider>(Model: X, data: ReadonlyArray<IQ
 
       const {kind, sensitive} = fields.get(propName) ?? {};
 
-      if (sensitive === true && readSensitive !== true) {
+      if (sensitive === true && includeSensitive !== true) {
         return;
       }
 
