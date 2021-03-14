@@ -54,8 +54,8 @@ export function desc<T>(value: Column<T>|IOperandable<T>): Order {
   return <any>{...(<any>value), _order: 'DESC',}
 }
 
-export function of<X extends TableMetaProvider>(_: X, field: keyof InstanceType<X>): IOperandable<InstanceType<X>[typeof field]>;
-export function of<X extends TableMetaProvider>(_: ITableRef<X>, field: keyof InstanceType<X>): IOperandable<InstanceType<X>[typeof field]>;
+export function of<X extends TableMetaProvider, R=InstanceType<X>, F extends keyof R = keyof R>(_: X, field: F): IOperandable<R[F]>;
+export function of<X extends TableMetaProvider, R=InstanceType<X>, F extends keyof R = keyof R>(_: ITableRef<X>, field: F): IOperandable<R[F]>;
 export function of(_: unknown, field: string): IOperandable<any> {
   const {tableName, fields}: ITableInfo = _[TableMetadataSymbol] ?? _;
 
