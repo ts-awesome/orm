@@ -245,3 +245,7 @@ export interface IQueryDriver<TQuery, R = IQueryData> extends IQueryExecutor<TQu
   begin(): Promise<ITransaction<TQuery, R>>;
   end(): Promise<void>;
 }
+
+export interface IQueryExecutorProvider<TQuery> {
+  getExecutor(): IQueryExecutor<TQuery>;
+}

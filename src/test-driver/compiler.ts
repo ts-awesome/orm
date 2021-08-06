@@ -9,7 +9,7 @@ class CompilerWrapper implements CompiledTestQuery {
   private readonly _where: string[] = [];
   private readonly _queryCounter: number;
 
-  constructor(query: IBuildableQuery, queryCounter: number) {
+  constructor(public readonly query: IBuildableQuery, queryCounter: number) {
     this._queryType = query._type;
     this._tableName = query._table.tableName;
     this._queryCounter = queryCounter;

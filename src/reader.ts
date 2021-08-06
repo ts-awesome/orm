@@ -38,7 +38,7 @@ function readScalar(data: ReadonlyArray<IQueryData>): number {
   }
 
   const raw: any = first[keys[0]];
-  const count = parseInt(raw);
+  const count = parseInt(raw, 10);
   if (isNaN(count)) {
     throw new Error(`Can't read count value from db. Invalid Count ${raw}`);
   }
