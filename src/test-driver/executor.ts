@@ -1,5 +1,5 @@
 import {IQueryExecutor, IQueryExecutorProvider} from '../';
-import {CompiledTestQuery, Mapper, TestQuery, TestQueryResult} from './interfaces';
+import {Mapper, TestQuery, TestQueryResult} from './interfaces';
 import {injectable} from "inversify";
 import {BaseExecutor} from "../base";
 
@@ -11,7 +11,7 @@ export class TestExecutor extends BaseExecutor<TestQuery, TestQueryResult> {
 
   private _mapper: Mapper;
 
-  public set mapper(value: (x: CompiledTestQuery) => []) {
+  public set mapper(value: Mapper) {
     this._mapper = value;
   }
 }
