@@ -22,7 +22,7 @@ class CompilerWrapper implements CompiledTestQuery {
   public get where(): string[] | null {
     switch (this.raw._type) {
       case 'SELECT':
-        return this.raw._where?.map(x => JSON.stringify(x));
+        return this.raw._where?.map(x => JSON.stringify(x)) ?? [];
     }
     return null;
   }
@@ -30,7 +30,7 @@ class CompilerWrapper implements CompiledTestQuery {
   public get joins(): string[] | null {
     switch (this.raw._type) {
       case 'SELECT':
-        return this.raw._joins?.map(x => x._tableName);
+        return this.raw._joins?.map(x => x._tableName) ?? [];
     }
     return null;
   }
