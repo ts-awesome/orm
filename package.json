@@ -26,5 +26,8 @@
   "license": "MIT",
   "dependencies": {
     "@ts-awesome/model-reader": "^1.0.1"
+  },
+  "peerDependencies": {
+    "inversify": "^5.0.0"
   }
 }

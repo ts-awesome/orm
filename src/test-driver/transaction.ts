@@ -5,13 +5,15 @@ import {injectable} from "inversify";
 
 @injectable()
 export class TestTransaction extends TestExecutor implements ITransaction<TestQuery, TestQueryResult> {
-  public readonly finished = false;
+  public finished = false;
 
   public async commit(): Promise<void> {
+    this.finished = true;
     console.log('COMMIT');
   }
 
   public async rollback(): Promise<void> {
+    this.finished = true;
     console.log('ROLLBACK');
   }
 }

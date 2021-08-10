@@ -1,64 +1,46 @@
 import {injectable} from "inversify";
-import { IBuildableQuery, IBuildableQueryCompiler, IBuildableSelectQuery } from '../';
-import { Mapper, CompiledTestQuery, TestQuery, QueryTypes } from './interfaces';
+import { IBuildableQuery } from '../';
+import { CompiledTestQuery, TestQuery } from './interfaces';
+import {BaseCompiler} from "../base";
 
 class CompilerWrapper implements CompiledTestQuery {
-  private readonly _queryType: string;
-  private readonly _tableName: string;
-  private readonly _joins: string[] = [];
-  private readonly _where: string[] = [];
-  private readonly _queryCounter: number;
 
-  constructor(public readonly query: IBuildableQuery, queryCounter: number) {
-    this._queryType = query._type;
-    this._tableName = query._table.tableName;
-    this._queryCounter = queryCounter;
-
-    switch (query._type) {
-      case QueryTypes.SELECT: this.compileSelectQuery(query);
-    }
-  }
-
-  public compileSelectQuery(query: IBuildableSelectQuery): void {
-    if (query._joins) {
-      query._joins.forEach(join => this._joins.push(join._tableName))
-    }
-    if (query._where) {
-      query._where.forEach(where => this._where.push(JSON.stringify(where)))
-    }
+  constructor(
+    public readonly queryCounter: number,
+    public readonly raw: IBuildableQuery,
+  ) {
   }
 
   public get queryType(): string {
-    return this._queryType;
+    return this.raw._type;
   }
 
   public get tableName(): string {
-    return this._tableName;
+    return this.raw._table?.tableName;
   }
 
-  public get where(): string[] {
-    return this._where;
+  public get where(): string[] | null {
+    switch (this.raw._type) {
+      case 'SELECT':
+        return this.raw._where?.map(x => JSON.stringify(x));
+    }
+    return null;
   }
 
-  public get joins(): string[] {
-    return this._joins;
-  }
-
-  public get queryCounter(): number {
-    return this._queryCounter;
+  public get joins(): string[] | null {
+    switch (this.raw._type) {
+      case 'SELECT':
+        return this.raw._joins?.map(x => x._tableName);
+    }
+    return null;
   }
 }
 
 @injectable()
-export class TestCompiler implements IBuildableQueryCompiler<TestQuery> {
-  private _mapper: Mapper;
+export class TestCompiler extends BaseCompiler<TestQuery> {
   private queryCounter = 0;
 
   compile(query: IBuildableQuery): TestQuery {
-    return this._mapper(new CompilerWrapper(query, ++this.queryCounter));
-  }
-
-  public set mapper(value: (x: CompiledTestQuery) => []) {
-    this._mapper = value;
+    return new CompilerWrapper(++this.queryCounter, query);
   }
 }

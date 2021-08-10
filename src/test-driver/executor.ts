@@ -1,14 +1,18 @@
-import {IQueryExecutor, IQueryExecutorProvider, reader, TableMetaProvider} from '../';
-import { TestQuery, TestQueryResult } from './interfaces';
+import {IQueryExecutor, IQueryExecutorProvider} from '../';
+import {CompiledTestQuery, Mapper, TestQuery, TestQueryResult} from './interfaces';
 import {injectable} from "inversify";
+import {BaseExecutor} from "../base";
 
 @injectable()
-export class TestExecutor implements IQueryExecutor<TestQuery, TestQueryResult> {
-  execute(query: TestQuery): Promise<ReadonlyArray<TestQueryResult>>;
-  execute(query: TestQuery, scalar: true): Promise<number>;
-  execute<X extends TableMetaProvider>(query: TestQuery, Model: X, sensitive?: boolean): Promise<ReadonlyArray<InstanceType<X>>>;
-  public execute(query: TestQuery, Model?: unknown | true, sensitive = false): Promise<any> {
-    return Promise.resolve(reader(query, Model as any, sensitive));
+export class TestExecutor extends BaseExecutor<TestQuery, TestQueryResult> {
+  protected do(query: TestQuery): Promise<TestQueryResult[]> {
+    return Promise.resolve(this._mapper(query));
+  }
+
+  private _mapper: Mapper;
+
+  public set mapper(value: (x: CompiledTestQuery) => []) {
+    this._mapper = value;
   }
 }
 

@@ -1,11 +1,11 @@
 import {IBuildableQuery} from "../interfaces";
 
-export type Mapper = (x: CompiledTestQuery) => [];
+export type Mapper = (x: CompiledTestQuery) => TestQueryResult[];
 export type TestQuery = any;
 export type TestQueryResult = any;
 
-export interface CompiledTestQuery {
-  readonly query: IBuildableQuery;
+export interface CompiledTestQuery extends TestQuery {
+  readonly raw: IBuildableQuery;
 
   readonly queryType: string;
   readonly tableName: string;
