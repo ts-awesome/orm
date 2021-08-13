@@ -47,6 +47,10 @@ function readScalar(data: ReadonlyArray<IQueryData>): number {
 }
 
 function readModel<X extends TableMetaProvider>(Model: X, data: ReadonlyArray<IQueryData>, includeSensitive: boolean) {
+  if (data.length === 0) {
+    return [];
+  }
+
   const colPropMap = {};
   const {fields} = readModelMeta(Model, false);
   fields?.forEach(({name}, propName) => {
