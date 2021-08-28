@@ -1,6 +1,6 @@
 import {IQueryExecutor, IQueryExecutorProvider} from '../';
 import {Mapper, TestQuery, TestQueryResult} from './interfaces';
-import {injectable} from "inversify";
+import {injectable, unmanaged} from "inversify";
 import {BaseExecutor} from "../base";
 
 @injectable()
@@ -19,7 +19,11 @@ export class TestExecutor extends BaseExecutor<TestQuery, TestQueryResult> {
 @injectable()
 export class TestExecutorProvider implements IQueryExecutorProvider<TestQuery> {
 
-  private executor = new TestExecutor();
+  constructor(
+    @unmanaged()
+    private readonly executor: IQueryExecutor<TestQuery> = new TestExecutor()
+  ) {
+  }
 
   getExecutor(): IQueryExecutor<TestQuery> {
     return this.executor;
