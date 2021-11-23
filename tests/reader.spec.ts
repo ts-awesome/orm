@@ -1,6 +1,5 @@
 import { reader, IQueryData, dbTable, IDbField, dbField, DbValueType } from '../dist';
 import { Person } from './models';
-import { Container } from 'inversify';
 
 const DB_JSON: IDbField = {
   reader(raw: DbValueType): any {
@@ -20,6 +19,7 @@ function generatePersons(quantity: number): IQueryData[] {
     person['age'] = 18;
     person['name'] = `TestName${i}`;
     person['uid'] = `uid${i}`;
+    // person['profiles'] = ['profile-a'];
     res.push(person);
   }
   return res;
@@ -28,10 +28,6 @@ function generatePersons(quantity: number): IQueryData[] {
 describe('DbReader', () => {
 
   const persons = generatePersons(5);
-  let container: Container;
-  beforeEach(() => {
-    container = new Container();
-  });
 
   it('read raw', () => {
     const result = reader(persons);
@@ -70,15 +66,43 @@ describe('DbReader', () => {
     expect(result).toEqual(expected);
   });
 
+  it('read Model from no data', () => {
+    @dbTable
+    class Model {
+      @dbField public readonly id!: number;
+      @dbField('raw') public readonly value!: string;
+      @dbField({kind: DB_JSON, model: [Person]}) public readonly personal!: Person[];
+
+      constructor(id, raw, personal) {
+        this.id = id;
+        this.value = raw;
+        this.personal = personal
+      }
+    }
+
+    const results = reader([], Model);
+    expect(results.length).toBe(0);
+  });
+
   it('read scalar', () => {
     const count = 10;
+    const correctResult = reader([{field: count}], true);
+    expect(correctResult).toBe(count);
+  });
+
+  it('read scalar from no data', () => {
     const fieldValue = 'string';
     const emptyData = reader([], true);
-    const correctResult = reader([{field: count}], true);
     expect(emptyData).toBe(0);
-    expect(correctResult).toBe(count);
     expect(() => {
       reader([{field: fieldValue as any}], true)
-    }).toThrowError(`Can\'t read count value from db. Invalid Count ${fieldValue}`);
+    }).toThrowError(`Can't read count value from db. Invalid Count ${fieldValue}`);
+  });
+
+  it('read scalar from invalid data', () => {
+    const fieldValue = 'string';
+    expect(() => {
+      reader([{field: fieldValue as any}], true)
+    }).toThrowError(`Can't read count value from db. Invalid Count ${fieldValue}`);
   });
 });

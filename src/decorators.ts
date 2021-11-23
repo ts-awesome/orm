@@ -96,14 +96,17 @@ export function dbField(...args: any[]): PropertyDecorator | void {
   }
 }
 
-interface IDBManyFieldMeta extends Pick<IFieldInfo, 'nullable'|'model'|'kind'>{
+interface IDBFilterFieldMeta {
   table: string;
   keyField: string;
   valueField: string;
 }
 
+interface IDBManyFieldMeta extends IDBFilterFieldMeta, Pick<IFieldInfo, 'nullable'|'model'|'kind'>{
+}
+
 // noinspection JSUnusedGlobalSymbols
-export function dbManyField(fieldMeta: IDBManyFieldMeta): PropertyDecorator {
+export function dbFilterField(fieldMeta: IDBFilterFieldMeta): PropertyDecorator {
   return function (target: Object, key: string | symbol): void {
     const {fields} = ensureTableInfo(target.constructor);
     const {valueField, keyField, table, ...rest}: IDBManyFieldMeta = fieldMeta;
@@ -114,7 +117,30 @@ export function dbManyField(fieldMeta: IDBManyFieldMeta): PropertyDecorator {
         keyField,
         tableName: table,
       },
-      getValue: x => x[key],
+      getValue: () => undefined,
     });
   };
+}
+
+// @deprecated
+// noinspection JSUnusedGlobalSymbols
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function dbManyField(fieldMeta: IDBManyFieldMeta): PropertyDecorator {
+  throw new Error(`@dbManyField is buggy, use @dbFilterField instead`);
+  // return function (target: Object, key: string | symbol): void {
+  //   const {fields} = ensureTableInfo(target.constructor);
+  //   const {valueField, keyField, table, ...rest}: IDBManyFieldMeta = fieldMeta;
+  //   fields.set(key.toString(), {
+  //     ...rest,
+  //     name: valueField,
+  //     relatedTo: {
+  //       keyField,
+  //       tableName: table,
+  //     },
+  //     getValue: x => x[key],
+  //   });
+  //
+  //   const {model, nullable = false} = fields.get(key.toString());
+  //   readable(model as any, nullable as any)(target, key);
+  // };
 }

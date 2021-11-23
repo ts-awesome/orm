@@ -5,7 +5,7 @@ import { TableRef, readModelMeta } from '../dist/builder';
 
 const tableInfo = readModelMeta(Person);
 const tableName = tableInfo.tableName;
-const person: InstanceType<typeof Person> = {id: 1, name: 'Name', age: 18, city: 'City'};
+const person: InstanceType<typeof Person> = {id: 1, name: 'Name', age: 18, city: 'City', profiles: ["profile-a"]};
 
 describe('Select', () => {
 
@@ -166,6 +166,37 @@ describe('Select', () => {
       ]
     }];
     expect(query._where).toStrictEqual(expectation);
+  });
+
+  describe('Where filter fields', () => {
+    it ('has', () => {
+      const query = Select(Person).where(({profiles}) => profiles.has('test'));
+      const expectation = [{
+        _operands: [
+          "test",
+          {
+            _operator: 'SUBQUERY',
+            _operands: [
+              {
+                _columns: [{_column: { table: "employee", name: "title"}}],
+                _table: { fields: null, tableName: "employee"},
+                _type: "SELECT",
+                _where: [
+                  {
+                    _operands: [
+                      { _column: { table: "employee", name: "person"}},
+                      { _column: { table: tableName, name: "id"}}
+                    ],
+                    _operator: "="
+                  }
+                ],
+              }
+            ]},
+        ],
+        _operator: "IN",
+      }];
+      expect(query._where).toStrictEqual(expectation);
+    });
   });
 
   it('Having', () => {

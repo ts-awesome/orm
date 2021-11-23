@@ -113,6 +113,7 @@ function resolveColumn(property: string, {tableName, fields}: ITableInfo): IColu
     table: tableName,
     name,
     wrapper: kind?.readQuery,
+    // writer: kind?.writer,
   }
 }
 
@@ -174,6 +175,7 @@ function values<T>(this: IBuildableValuesPartial, _: Partial<T> | ValuesBuilder<
       .keys(_)
       .filter(prop => this._table.fields.has(prop))
       .map(prop => this._table.fields.get(prop))
+      .filter(({relatedTo}) => relatedTo == null)
       .reduce((p: any, {getValue, kind, name}: IFieldInfo) => {
         let value = getValue(_);
         let wrapper: any = undefined;
