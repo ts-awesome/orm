@@ -1,4 +1,4 @@
-import { IBuildableSubSelectQuery, ITableInfo } from './interfaces';
+import {IBuildableSubSelectQuery} from './interfaces';
 
 export interface IColumnRef {
   table?: string;
@@ -43,10 +43,10 @@ export interface IOrderBy {
 }
 
 export interface IJoin {
-  _table: ITableInfo;
+  _tableName: string;
   _condition: IExpression;
   _type: 'INNER' | 'LEFT' | 'RIGHT' | 'FULL OUTER';
-  _alias: string | undefined;
+  _alias?: string | undefined;
 }
 
 export interface IAlias {

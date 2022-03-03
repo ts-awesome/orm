@@ -1,11 +1,11 @@
-import { alias, and, asc, Delete, desc, Insert, max, Select, sum, Update, Upsert } from '../src';
+import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSymbol, Update, Upsert, of} from '../dist';
 import { Employee, Person } from './models';
-import { TableRef } from '../src/builder';
+import { TableRef, readModelMeta } from '../dist/builder';
 
 
-const tableInfo = (Person.prototype as any).tableInfo;
+const tableInfo = readModelMeta(Person);
 const tableName = tableInfo.tableName;
-const person: InstanceType<typeof Person> = {id: 1, name: 'Name', age: 18, city: 'City'};
+const person: InstanceType<typeof Person> = {id: 1, name: 'Name', age: 18, city: 'City', profiles: ["profile-a"]};
 
 describe('Select', () => {
 
@@ -22,6 +22,7 @@ describe('Select', () => {
     const columnsThroughList = Select(Person).columns(['name', 'age']);
     const columnsThroughBuilder = Select(Person).columns(({name, age}) => [name, age]);
     const columnsWithAlias = Select(Person).columns(({name}) => [alias(name, nameAlias)]);
+    const columnsWithOf = Select(Person).columns(() => [of(Employee, 'company')]);
     const columnsWithExpression = Select(Person).columns(({age}) => [age.mul(coefficient), max(age)]);
 
     const expectation = {
@@ -32,6 +33,9 @@ describe('Select', () => {
       alias: [
         {_alias: nameAlias, _operands: [{_column: {table: tableName, name: 'name', wrapper: undefined}}]}
       ],
+      of: [
+        {_column: {table: readModelMeta(Employee).tableName, name: 'company'}}
+      ],
       expression: [
         {_operator: '*', _operands: [{_column: {table: tableName, name: 'age', wrapper: undefined}}, coefficient]},
         {_func: 'MAX', _args: [{_column: {table: tableName, name: 'age', wrapper: undefined}}]}
@@ -41,13 +45,14 @@ describe('Select', () => {
     expect(columnsThroughList._columns).toStrictEqual(expectation.default);
     expect(columnsThroughBuilder._columns).toStrictEqual(expectation.default);
     expect(columnsWithAlias._columns).toStrictEqual(expectation.alias);
+    expect(columnsWithOf._columns).toStrictEqual(expectation.of);
     expect(columnsWithExpression._columns).toStrictEqual(expectation.expression);
   });
 
   it('Joins', () => {
     const enum joinTypes {inner = 'INNER', left = 'LEFT', right = 'RIGHT', full = 'FULL OUTER'}
 
-    const employeeTableInfo = (Employee.prototype as any).tableInfo;
+    const employeeTableInfo = readModelMeta(Employee);
 
     const innerJoin = Select(Person).join(Employee, ({id}, {personId}) => id.eq(personId));
     const leftJoin = Select(Person).joinLeft(Employee, ({id}, {personId}) => id.eq(personId));
@@ -55,7 +60,7 @@ describe('Select', () => {
     const fullJoin = Select(Person).joinFull(Employee, ({id}, {personId}) => id.eq(personId));
 
     const innerJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: undefined,
       _type: joinTypes.inner,
       _condition: {
@@ -64,7 +69,7 @@ describe('Select', () => {
       }
     }];
     const leftJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: undefined,
       _type: joinTypes.left,
       _condition: {
@@ -73,7 +78,7 @@ describe('Select', () => {
       }
     }];
     const rightJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: undefined,
       _type: joinTypes.right,
       _condition: {
@@ -82,7 +87,7 @@ describe('Select', () => {
       }
     }];
     const fullJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: undefined,
       _type: joinTypes.full,
       _condition: {
@@ -99,7 +104,7 @@ describe('Select', () => {
 
   it('Joins with alias', () => {
     const tableRef = new TableRef(Employee);
-    const employeeTableInfo = (Employee.prototype as any).tableInfo;
+    const employeeTableInfo = readModelMeta(Employee);
 
     const enum joinTypes {inner = 'INNER', left = 'LEFT', right = 'RIGHT', full = 'FULL OUTER'}
 
@@ -109,7 +114,7 @@ describe('Select', () => {
     const fullJoin = Select(Person).joinFull(Employee, tableRef, ({id}, {personId}) => id.eq(personId));
 
     const innerJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: tableRef.tableName,
       _type: joinTypes.inner,
       _condition: {
@@ -118,7 +123,7 @@ describe('Select', () => {
       }
     }];
     const leftJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: tableRef.tableName,
       _type: joinTypes.left,
       _condition: {
@@ -127,7 +132,7 @@ describe('Select', () => {
       }
     }];
     const rightJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: tableRef.tableName,
       _type: joinTypes.right,
       _condition: {
@@ -136,7 +141,7 @@ describe('Select', () => {
       }
     }];
     const fullJoinExpectation = [{
-      _table: employeeTableInfo.tableName,
+      _tableName: employeeTableInfo.tableName,
       _alias: tableRef.tableName,
       _type: joinTypes.full,
       _condition: {
@@ -163,8 +168,39 @@ describe('Select', () => {
     expect(query._where).toStrictEqual(expectation);
   });
 
+  describe('Where filter fields', () => {
+    it ('has', () => {
+      const query = Select(Person).where(({profiles}) => profiles.has('test'));
+      const expectation = [{
+        _operands: [
+          "test",
+          {
+            _operator: 'SUBQUERY',
+            _operands: [
+              {
+                _columns: [{_column: { table: "employee", name: "title"}}],
+                _table: { fields: null, tableName: "employee"},
+                _type: "SELECT",
+                _where: [
+                  {
+                    _operands: [
+                      { _column: { table: "employee", name: "person"}},
+                      { _column: { table: tableName, name: "id"}}
+                    ],
+                    _operator: "="
+                  }
+                ],
+              }
+            ]},
+        ],
+        _operator: "IN",
+      }];
+      expect(query._where).toStrictEqual(expectation);
+    });
+  });
+
   it('Having', () => {
-    const employeeTableName = (Employee.prototype as any).tableInfo.tableName;
+    const employeeTableName = readModelMeta(Employee).tableName;
     const salaryRate = 2000;
     const query = Select(Employee)
       .columns(({salary}) => [sum(salary)])
@@ -252,9 +288,7 @@ describe('Insert', () => {
 describe('Upsert', () => {
 
   const infoMock = {
-    prototype: {
-      tableInfo: {}
-    }
+    [TableMetadataSymbol]: {}
   };
 
   it('Check query info', () => {

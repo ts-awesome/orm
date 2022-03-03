@@ -1,15 +1,18 @@
 import {ITableInfo, IFieldInfo, WhereBuilder} from './interfaces';
+import {TableMetadataSymbol} from "./symbols";
 
-function ensureTableInfo(proto: {tableInfo?: ITableInfo}): ITableInfo {
-  if (!proto.tableInfo) {
-    proto.tableInfo = {
+import {readable} from "@ts-awesome/model-reader";
+
+function ensureTableInfo(proto: any): ITableInfo {
+  if (typeof proto[TableMetadataSymbol] !== 'object') {
+    proto[TableMetadataSymbol] = {
       tableName: '',
       fields: new Map<string, IFieldInfo>(),
       indexes: []
     };
   }
 
-  return proto.tableInfo;
+  return proto[TableMetadataSymbol];
 }
 
 interface IDBIndexMeta<T> {
@@ -20,30 +23,31 @@ interface IDBIndexMeta<T> {
 }
 
 export function dbTable<TFunction extends Function>(target: TFunction): TFunction | void;
-export function dbTable<T>(tableName?: string, uniqueIndexes?: IDBIndexMeta<T>[]): ClassDecorator;
-export function dbTable<T>(...args: any): ClassDecorator {
+export function dbTable<T>(tableName?: string, uniqueIndexes?: readonly IDBIndexMeta<T>[]): ClassDecorator;
+export function dbTable<TFunction extends Function>(...args: any[]): ClassDecorator | TFunction | void {
   let tableName, uniqueIndexes;
   if (args.length > 0 && typeof args[0] === 'function') {
-    // @ts-ignore
-    return validator(...args);
+    return validator<TFunction>(...(args as [TFunction]));
   }
 
+  // eslint-disable-next-line prefer-const
   [tableName, uniqueIndexes] = args;
   return validator;
 
   function validator <TFunction extends Function>(target: TFunction): TFunction | void {
-    const tableInfo = ensureTableInfo(target.prototype);
+    const tableInfo = ensureTableInfo(target);
     tableInfo.tableName = tableName ?? target.name
       .replace(/Model$/, '')
       .toLowerCase();
-    uniqueIndexes?.forEach(ui => {
-      tableInfo.indexes!.push({
+
+    for(const ui of uniqueIndexes ?? []) {
+      tableInfo.indexes?.push({
         name: ui.name,
         keyFields: ui.fields,
         where: ui.where,
         default: ui.default || false,
       });
-    });
+    }
   }
 }
 
@@ -53,29 +57,28 @@ interface IDBFieldMeta extends Omit<IFieldInfo, 'getValue' | 'relatedTo' | 'name
 
 export function dbField(target: any, key: string): void;
 export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator;
-export function dbField(...args: any): PropertyDecorator {
+export function dbField(...args: any[]): PropertyDecorator | void {
   let fieldMeta;
   if (args.length > 1 && typeof args[1] === 'string') {
-    // @ts-ignore
-    return validator(...args);
+    return validator(...(args as [unknown, string]));
   }
 
+  // eslint-disable-next-line prefer-const
   [fieldMeta] = args;
   return validator;
 
   function validator(target: Object, key: string | symbol): void {
-    const tableInfo = ensureTableInfo(target.constructor.prototype);
+    const tableInfo = ensureTableInfo(target.constructor);
     const {fields} = tableInfo;
 
     if (typeof fieldMeta !== 'string' && fieldMeta) {
-      let {name, primaryKey, kind, ...rest}: IDBFieldMeta = fieldMeta;
-      name = name ?? (typeof key === 'string' ? key : key.toString());
+      const {name = key.toString(), primaryKey, kind, ...rest}: IDBFieldMeta = fieldMeta;
       fields.set(key.toString(), {
         ...rest,
         name,
         primaryKey,
         kind,
-        getValue(rec: any) { return rec[key] },
+        getValue: x => x[key],
       });
       if (primaryKey) {
         tableInfo.primaryKey = name;
@@ -84,30 +87,60 @@ export function dbField(...args: any): PropertyDecorator {
     } else {
       fields.set(key.toString(), {
         name: fieldMeta || key,
-        getValue(rec: any) { return rec[key] },
+        getValue: x => x[key],
       });
     }
+
+    const {model, nullable = false} = fields.get(key.toString());
+    readable(model as any, nullable as any)(target, key);
   }
 }
 
-interface IDBManyFieldMeta {
+interface IDBFilterFieldMeta {
   table: string;
   keyField: string;
   valueField: string;
 }
 
+interface IDBManyFieldMeta extends IDBFilterFieldMeta, Pick<IFieldInfo, 'nullable'|'model'|'kind'>{
+}
+
 // noinspection JSUnusedGlobalSymbols
-export function dbManyField(fieldMeta: IDBManyFieldMeta): PropertyDecorator {
+export function dbFilterField(fieldMeta: IDBFilterFieldMeta): PropertyDecorator {
   return function (target: Object, key: string | symbol): void {
-    const {fields} = ensureTableInfo(target.constructor.prototype);
-    let {valueField, keyField, table}: IDBManyFieldMeta = fieldMeta;
+    const {fields} = ensureTableInfo(target.constructor);
+    const {valueField, keyField, table, ...rest}: IDBManyFieldMeta = fieldMeta;
     fields.set(key.toString(), {
+      ...rest,
       name: valueField,
       relatedTo: {
         keyField,
-        tableName: table
+        tableName: table,
       },
-      getValue: (rec: any) => rec[key]
+      getValue: () => undefined,
     });
   };
+}
+
+// @deprecated
+// noinspection JSUnusedGlobalSymbols
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function dbManyField(fieldMeta: IDBManyFieldMeta): PropertyDecorator {
+  throw new Error(`@dbManyField is buggy, use @dbFilterField instead`);
+  // return function (target: Object, key: string | symbol): void {
+  //   const {fields} = ensureTableInfo(target.constructor);
+  //   const {valueField, keyField, table, ...rest}: IDBManyFieldMeta = fieldMeta;
+  //   fields.set(key.toString(), {
+  //     ...rest,
+  //     name: valueField,
+  //     relatedTo: {
+  //       keyField,
+  //       tableName: table,
+  //     },
+  //     getValue: x => x[key],
+  //   });
+  //
+  //   const {model, nullable = false} = fields.get(key.toString());
+  //   readable(model as any, nullable as any)(target, key);
+  // };
 }

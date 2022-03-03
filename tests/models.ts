@@ -1,4 +1,4 @@
-import { dbField, dbTable, IDbField } from '../src';
+import { dbField, dbTable, IDbField, dbFilterField } from '../dist';
 
 const UUID: IDbField = {}
 
@@ -15,25 +15,21 @@ export class Person {
   })
   uid?: string;
 
-  @dbField
-  name!: string;
+  @dbField name!: string;
+  @dbField age!: number;
+  @dbField city!: string;
 
-  @dbField
-  age!: number;
-
-  @dbField
-  city!: string;
+  @dbFilterField({
+    table: 'employee',
+    keyField: 'person',
+    valueField: 'title',
+  })
+  profiles: string[];
 }
 
 @dbTable('Employee')
 export class Employee {
-
-  @dbField
-  personId!: number;
-
-  @dbField
-  company!: string;
-
-  @dbField
-  salary!: number;
+  @dbField personId!: number;
+  @dbField company!: string;
+  @dbField salary!: number;
 }

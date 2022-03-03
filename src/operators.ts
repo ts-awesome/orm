@@ -1,5 +1,6 @@
-import {Column, IBuildableQuery, IOperandable, Order, TableMetaProvider, ITableRef} from "./interfaces";
+import {Column, IBuildableQuery, IOperandable, Order, TableMetaProvider, ITableRef, ITableInfo} from "./interfaces";
 import {ColumnWrapper, FunctionCall, Operandable} from "./wrappers";
+import {TableMetadataSymbol} from "./symbols";
 
 export function and(...operands: (boolean | IOperandable<boolean>)[]): IOperandable<boolean> {
   return new Operandable('AND', operands) as IOperandable<boolean>
@@ -53,16 +54,16 @@ export function desc<T>(value: Column<T>|IOperandable<T>): Order {
   return <any>{...(<any>value), _order: 'DESC',}
 }
 
-export function of<X extends TableMetaProvider<X>, T=any>(_: X, field: keyof InstanceType<X>): IOperandable<T>;
-export function of<X extends TableMetaProvider<X>, T=any>(_: ITableRef<X>, field: keyof InstanceType<X>): IOperandable<T>;
-export function of<X extends TableMetaProvider<X>, T=any>(_: any, field: keyof InstanceType<X>): IOperandable<T> {
-  const {tableName, fields} = _.prototype?.tableInfo ?? _;
+export function of<X extends TableMetaProvider, R=InstanceType<X>, F extends keyof R = keyof R>(_: X, field: F): IOperandable<R[F]>;
+export function of<X extends TableMetaProvider, R=InstanceType<X>, F extends keyof R = keyof R>(_: ITableRef<X>, field: F): IOperandable<R[F]>;
+export function of(_: unknown, field: string): IOperandable<any> {
+  const {tableName, fields}: ITableInfo = _[TableMetadataSymbol] ?? _;
 
   if (!fields.has(field)) {
     throw new Error(`Field '${field}' should be annotated with @dbField() or @dbManyField()`);
   }
-  const {name} = fields.get(field)!;
-  return (new ColumnWrapper({table: tableName, name})) as IOperandable<T>;
+  const {name} = fields.get(field);
+  return (new ColumnWrapper({table: tableName, name}));
 }
 
 export function alias<T>(expr: T | IOperandable<T>, name: string): IOperandable<T> {
