@@ -1,6 +1,7 @@
 import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSymbol, Update, Upsert, of} from '../dist';
-import { Employee, Person } from './models';
+import { Employee, Person, Tag } from './models';
 import { TableRef, readModelMeta } from '../dist/builder';
+import {exists} from "../src";
 
 
 const tableInfo = readModelMeta(Person);
@@ -169,7 +170,7 @@ describe('Select', () => {
   });
 
   describe('Where filter fields', () => {
-    it ('has', () => {
+    it ('simple many to many', () => {
       const query = Select(Person).where(({profiles}) => profiles.has('test'));
       const expectation = [{
         _operands: [
@@ -190,6 +191,77 @@ describe('Select', () => {
                     _operator: "="
                   }
                 ],
+              }
+            ]},
+        ],
+        _operator: "IN",
+      }];
+      expect(query._where).toStrictEqual(expectation);
+    });
+
+    it ('with builder', () => {
+      const query = Select(Person).where(({tags}) => tags.has('tag'));
+      const expectation = [{
+        _operands: [
+          "tag",
+          {
+            _operator: 'SUBQUERY',
+            _operands: [
+              {
+                _columns: [{_column: { table: "Tag", name: "name", wrapper: undefined}}],
+                _table: readModelMeta(Tag),
+                _alias: null,
+                _type: "SELECT",
+                _distinct: false,
+                _joins: [
+                  {
+                    _alias: undefined,
+                    _tableName: "TagPerson",
+                    _type: "INNER",
+                    _condition: {
+                      _operands: [
+                        {
+                          _operands: [
+                            {
+                              _column: {
+                                name: 'id',
+                                table: "Tag",
+                                wrapper: undefined
+                              }
+                            },
+                            {
+                              _column: {
+                                name: 'tag',
+                                table: "TagPerson",
+                                wrapper: undefined
+                              }
+                            }
+                          ],
+                          _operator: '='
+                        },
+                        {
+                          _operands: [
+                            {
+                              _column: {
+                                name: 'person',
+                                table: "TagPerson",
+                                wrapper: undefined
+                              }
+                            },
+                            {
+                              _column: {
+                                name: 'id',
+                                table: "Person",
+                              }
+                            }
+                          ],
+                          _operator: '='
+                        },
+                      ],
+                      _operator: 'AND'
+                    }
+                  }
+                ]
               }
             ]},
         ],
@@ -262,6 +334,55 @@ describe('Select', () => {
     const query = Select(Person).offset(offset);
     expect(query._offset).toBe(offset);
   });
+
+  it('subquery on self', () => {
+    const query = Select(Person).where(({id}) => exists(Select(alias(Person, 'person_filter')).where(({id: _}) => _.eq(id))));
+
+    {
+      const x = (query as any)._where[0]._operands[0];
+      delete x.columns;
+      delete x.groupBy;
+      delete x.having;
+      delete x.join;
+      delete x.joinFull;
+      delete x.joinLeft;
+      delete x.joinRight;
+      delete x.limit;
+      delete x.offset;
+      delete x.orderBy;
+      delete x.where;
+    }
+
+    const expectation = {
+      _where: [{
+        "_operands": [{
+          "_alias": "person_filter",
+          "_distinct": false,
+          "_table": Person[TableMetadataSymbol],
+          "_type": "SELECT",
+          "_where": [{
+            "_operands": [{
+              "_column": {
+                "name": "id",
+                "table": "person_filter",
+                "wrapper": undefined,
+              },
+            }, {
+              "_column": {
+                "name": "id",
+                "table": "Person",
+                "wrapper": undefined,
+              },
+            }],
+            "_operator": "=",
+          }]
+        }],
+        "_operator": "EXISTS",
+      }]
+    };
+
+    expect(query._where).toStrictEqual(expectation._where);
+  })
 });
 
 describe('Insert', () => {

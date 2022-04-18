@@ -96,13 +96,13 @@ describe('DbReader', () => {
     expect(emptyData).toBe(0);
     expect(() => {
       reader([{field: fieldValue as any}], true)
-    }).toThrowError(`Can't read count value from db. Invalid Count ${fieldValue}`);
+    }).toThrowError(`Invalid scalar "${fieldValue}", number expected.`);
   });
 
   it('read scalar from invalid data', () => {
     const fieldValue = 'string';
     expect(() => {
       reader([{field: fieldValue as any}], true)
-    }).toThrowError(`Can't read count value from db. Invalid Count ${fieldValue}`);
+    }).toThrowError(`Invalid scalar "${fieldValue}", number expected.`);
   });
 });

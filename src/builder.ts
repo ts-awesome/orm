@@ -26,7 +26,7 @@ import {
   ITableRef, IBuildableDeleteQuery, IBuildableUpdateQuery, IBuildableInsertQuery, IIndexInfo,
 } from './interfaces';
 import {and} from './operators';
-import {IColumnRef, IExpression, IReference} from "./intermediate";
+import {IAlias, IColumnRef, IExpression, IReference} from "./intermediate";
 import {TableMetadataSymbol} from "./symbols";
 
 export interface IExpr {
@@ -47,8 +47,8 @@ function proxy({tableName: originalTableName, fields, primaryKey}: ITableInfo, i
         throw new Error(`Field '${property}' should be annotated with @dbField() or @dbManyField()`);
       }
 
-      const {relatedTo, name} = fields.get(property);
-      if (!relatedTo) {
+      const {builder, relatedTo, name} = fields.get(property);
+      if (!relatedTo && !builder) {
         const ref = resolveColumn(property, {tableName, fields})
         if (ignoreTableName) {
           ref.table = undefined;
@@ -58,6 +58,13 @@ function proxy({tableName: originalTableName, fields, primaryKey}: ITableInfo, i
 
       if (!primaryKey) {
         throw new Error('@dbManyField() should be used on table with single field PK');
+      }
+
+      if (builder) {
+        const pk: IOperandable<any> = new ColumnWrapper({table: tableName, name: primaryKey});
+        const query: IBuildableSubSelectQuery = builder(pk);
+        const stripped = Object.fromEntries(Object.entries(query).filter(([, value]) => typeof value !== 'function'));
+        return new Operandable('SUBQUERY', [stripped]);
       }
 
       return new Operandable('SUBQUERY', [{
@@ -80,20 +87,22 @@ function proxy({tableName: originalTableName, fields, primaryKey}: ITableInfo, i
   });
 }
 
-function treeOf<T>(_: Partial<T>, tableInfo: ITableInfo): any {
+function treeOf<T>(_: Partial<T>, tableInfo: ITableInfo, alias?: string): any {
   validateModel(_, tableInfo);
+  const tableName = alias ?? tableInfo.tableName;
   return and(
     ...Object.keys(_)
-      .map(field => (new ColumnWrapper(resolveColumn(field as string, tableInfo)) as IOperandable<T>).eq(_[field]))
+      .map(field => (new ColumnWrapper(resolveColumn(field as string, {tableName, fields: tableInfo.fields})) as IOperandable<T>).eq(_[field]))
   );
 }
 
-function columnsOf<T>(_: ColumnsList<T>, {tableName, fields}: ITableInfo): IReference[] {
+function columnsOf<T>(_: ColumnsList<T>, {tableName: originaltableName, fields}: ITableInfo, alias?: string): IReference[] {
   _.forEach(field => {
-    if (!fields.has(field as string) || fields.get(field as string).relatedTo) {
+    if (!fields.has(field as string) || fields.get(field as string).relatedTo || fields.get(field as string).builder) {
       throw new Error(`Field '${field}' should be decorated with @dbField`)
     }
   });
+  const tableName = alias ?? originaltableName;
   return _.map(field => ({_column: resolveColumn(field as string, {tableName, fields})}));
 }
 
@@ -131,15 +140,15 @@ function validateFields(_: string[], tableInfo: ITableInfo): void {
 
 function where<T>(this: IBuildableWherePartial, _: Partial<T> | WhereBuilder<T>) {
   const tree = typeof _ === 'function'
-    ? (_ as WhereBuilder<T>)(proxy(this._table))
-    : treeOf(_, this._table);
+    ? (_ as WhereBuilder<T>)(proxy(this._table, false, this._alias))
+    : treeOf(_, this._table, this._alias);
   this._where = this._where || [];
   this._where.push(tree);
   return this;
 }
 
 function having<T>(this: IBuildableSelectQuery, _: HavingBuilder<T>) {
-  const tree = _(proxy(this._table)) as any;
+  const tree = _(proxy(this._table, false, this._alias)) as any;
   this._having = this._having || [];
   this._having.push(tree);
   return this;
@@ -147,35 +156,35 @@ function having<T>(this: IBuildableSelectQuery, _: HavingBuilder<T>) {
 
 function columns<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | ColumnsBuilder<T>) {
   this._columns = typeof _ === 'function'
-    ? _(proxy(this._table)) as IExpression[]
+    ? _(proxy(this._table, false, this._alias)) as IExpression[]
     : columnsOf(_, this._table);
   return this;
 }
 
 function orderBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | OrderBuilder<T>) {
   this._orderBy = typeof _ === 'function'
-    ? _(proxy(this._table)) as IReference[]
+    ? _(proxy(this._table, false, this._alias)) as IReference[]
     : columnsOf(_, this._table);
   return this;
 }
 
 function groupBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | GroupByBuilder<T>) {
   this._groupBy = typeof _ === 'function'
-    ?  _(proxy(this._table)) as any as IReference[]
+    ?  _(proxy(this._table, false, this._alias)) as any as IReference[]
     : columnsOf(_, this._table);
   return this;
 }
 
 function values<T>(this: IBuildableValuesPartial, _: Partial<T> | ValuesBuilder<T>) {
   if (typeof _ === 'function') {
-    this._values = (_ as ValuesBuilder<T>)(proxy(this._table));
+    this._values = (_ as ValuesBuilder<T>)(proxy(this._table, false, this._alias));
   } else {
     validateModel(_, this._table);
     this._values = Object
       .keys(_)
       .filter(prop => this._table.fields.has(prop))
       .map(prop => this._table.fields.get(prop))
-      .filter(({relatedTo}) => relatedTo == null)
+      .filter(({relatedTo, builder}) => relatedTo == null && builder == null)
       .reduce((p: any, {getValue, kind, name}: IFieldInfo) => {
         let value = getValue(_);
         let wrapper: any = undefined;
@@ -222,8 +231,8 @@ function conflict<T>(this: IBuildableUpsertQuery, _?: string) {
 
     if (index.where) {
       const tree = typeof index.where === 'function'
-        ? (index.where as WhereBuilder<T>)(proxy(this._table, true))
-        : treeOf(index.where, this._table);
+        ? (index.where as WhereBuilder<T>)(proxy(this._table, true, this._alias))
+        : treeOf(index.where, this._table, this._alias);
       _where = [tree];
     }
   }
@@ -262,7 +271,7 @@ function join<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...args:
     _tableName: table.tableName,
     _alias: alias?.tableName,
     _type: 'INNER',
-    _condition: condition(proxy(this._table), proxy(table, undefined, alias?.tableName)) as any,
+    _condition: condition(proxy(this._table, false, this._alias), proxy(table, undefined, alias?.tableName)) as any,
   });
   return this;
 }
@@ -278,7 +287,7 @@ function joinLeft<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...a
     _tableName: table.tableName,
     _alias: alias?.tableName,
     _type: 'LEFT',
-    _condition: condition(proxy(this._table), proxy(table, undefined, alias?.tableName)) as any,
+    _condition: condition(proxy(this._table, false, this._alias), proxy(table, undefined, alias?.tableName)) as any,
   });
   return this;
 }
@@ -294,7 +303,7 @@ function joinRight<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...
     _tableName: table.tableName,
     _alias: alias?.tableName,
     _type: 'RIGHT',
-    _condition: condition(proxy(this._table), proxy(table, undefined, alias?.tableName)) as any,
+    _condition: condition(proxy(this._table, false, this._alias), proxy(table, undefined, alias?.tableName)) as any,
   });
   return this;
 }
@@ -310,7 +319,7 @@ function joinFull<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...a
     _tableName: table.tableName,
     _alias: alias?.tableName,
     _type: 'FULL OUTER',
-    _condition: condition(proxy(this._table), proxy(table, undefined, alias?.tableName)) as any,
+    _condition: condition(proxy(this._table, false, this._alias), proxy(table, undefined, alias?.tableName)) as any,
   });
   return this;
 }
@@ -348,10 +357,15 @@ export function readModelMeta<T extends TableMetaProvider>(Model: T, required = 
   return Model[TableMetadataSymbol] ?? {};
 }
 
-export function Select<T extends TableMetaProvider>(_: T, distinct = false): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
+export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, distinct = false): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
+  function isAlias(x: any): x is IAlias {
+    return x && typeof x._alias === 'string';
+  }
+
   return {
     _type: 'SELECT',
-    _table: readModelMeta(_),
+    _table: readModelMeta(isAlias(_) ? _._operands[0] : _),
+    _alias: isAlias(_) ? _._alias : null,
     _distinct: distinct,
     columns,
     join,

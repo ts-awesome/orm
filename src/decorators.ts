@@ -1,4 +1,12 @@
-import {ITableInfo, IFieldInfo, WhereBuilder} from './interfaces';
+import {
+  ITableInfo,
+  IFieldInfo,
+  WhereBuilder,
+  IBuildableSubSelectQuery,
+  Queryable,
+  SubQueryBuilder,
+  TableMetaProvider
+} from './interfaces';
 import {TableMetadataSymbol} from "./symbols";
 
 import {readable} from "@ts-awesome/model-reader";
@@ -106,9 +114,22 @@ interface IDBManyFieldMeta extends IDBFilterFieldMeta, Pick<IFieldInfo, 'nullabl
 }
 
 // noinspection JSUnusedGlobalSymbols
-export function dbFilterField(fieldMeta: IDBFilterFieldMeta): PropertyDecorator {
+export function dbFilterField(fieldMeta: IDBFilterFieldMeta): PropertyDecorator;
+export function dbFilterField<T=number>(builder: SubQueryBuilder<T>): PropertyDecorator;
+export function dbFilterField<T=unknown>(fieldMeta: IDBFilterFieldMeta | SubQueryBuilder<T>): PropertyDecorator {
   return function (target: Object, key: string | symbol): void {
     const {fields} = ensureTableInfo(target.constructor);
+
+    if (typeof fieldMeta === 'function') {
+      const name = key.toString();
+      fields.set(key.toString(), {
+        name,
+        builder: fieldMeta,
+        getValue: () => undefined,
+      });
+      return
+    }
+
     const {valueField, keyField, table, ...rest}: IDBManyFieldMeta = fieldMeta;
     fields.set(key.toString(), {
       ...rest,

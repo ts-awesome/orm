@@ -1,4 +1,5 @@
 import { IExpression, IJoin, IOrderBy, IReference } from './intermediate';
+import {Operandable} from "./wrappers";
 
 export type DbValueType = string | number | boolean | Date | null | undefined;
 
@@ -7,6 +8,10 @@ export interface IDbField<T = any> {
   writeQuery?(name: string): string;
   reader?(raw: DbValueType): T;
   writer?(value: T): DbValueType;
+}
+
+export interface SubQueryBuilder<T=number> {
+  (value: Operandable<T>): IBuildableSubSelectQuery
 }
 
 declare type Class = new (...args: any) => any;
@@ -19,6 +24,7 @@ export interface IFieldInfo {
     tableName: string;
     keyField: string;
   };
+  builder?: SubQueryBuilder<any>;
   sensitive?: true;
   default?: DbValueType;
   kind?: IDbField;
@@ -107,18 +113,21 @@ export interface Order {}
 
 export interface IBuildableWherePartial {
   _table: ITableInfo
+  _alias?: string
   _where?: any[]
   _limit?: number
 }
 
 export interface IBuildableValuesPartial {
   _table: ITableInfo
+  _alias?: string
   _values?: any
 }
 
 export interface IBuildableSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
+  _alias?: string
   _distinct?: boolean
   _columns?: IExpression[]
   _joins?: IJoin[]
@@ -133,6 +142,7 @@ export interface IBuildableSelectQuery {
 export interface IBuildableSubSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
+  _alias?: string
   _distinct?: boolean
   _columns?: IExpression[]
   _joins?: IJoin[]
@@ -150,6 +160,7 @@ export interface IBuildableInsertQuery {
 export interface IBuildableUpsertQuery {
   _type: 'UPSERT'
   _table: ITableInfo
+  _alias?: string
   _values?: any
   _where?: IExpression[]
   _conflictExp?: {
