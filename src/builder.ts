@@ -357,12 +357,25 @@ export function readModelMeta<T extends TableMetaProvider>(Model: T, required = 
   return Model[TableMetadataSymbol] ?? {};
 }
 
+function fix<T>(x: T): T {
+  for (const prop of Object.keys(x)) {
+    if (typeof x[prop] === 'function') {
+      Object.defineProperty(x, prop, {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+      })
+    }
+  }
+  return x;
+}
+
 export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, distinct = false): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
   function isAlias(x: any): x is IAlias {
     return x && typeof x._alias === 'string';
   }
 
-  return {
+  return fix({
     _type: 'SELECT',
     _table: readModelMeta(isAlias(_) ? _._operands[0] : _),
     _alias: isAlias(_) ? _._alias : null,
@@ -378,19 +391,26 @@ export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, dist
     orderBy,
     limit,
     offset,
-  } as IBuildableSelectQuery as any;
+    asScalar() {
+      if (this._columns?.length !== 1) {
+        throw new Error(`Scalar sub-query expects a single column`);
+      }
+
+      return new Operandable('SUBQUERY', [this]);
+    }
+  }) as IBuildableSelectQuery as any;
 }
 
 export function Insert<T extends TableMetaProvider>(_: T): IInsertBuilder<InstanceType<T>> & IBuildableInsertQuery {
-  return {
+  return fix({
     _type: 'INSERT',
     _table: readModelMeta(_),
     values,
-  } as IBuildableInsertQuery as any;
+  }) as IBuildableInsertQuery as any;
 }
 
 export function Upsert<T extends TableMetaProvider>(_: T): IUpsertBuilder<InstanceType<T>> & IBuildableUpsertQuery {
-  return {
+  return fix({
     _type: 'UPSERT',
     _table: readModelMeta(_),
     _limit: 1,
@@ -398,24 +418,24 @@ export function Upsert<T extends TableMetaProvider>(_: T): IUpsertBuilder<Instan
     where,
     limit,
     conflict
-  } as IBuildableUpsertQuery as any;
+  }) as IBuildableUpsertQuery as any;
 }
 
 export function Update<T extends TableMetaProvider>(_: T): IUpdateBuilder<InstanceType<T>> & IBuildableUpdateQuery {
-  return {
+  return fix({
     _type: 'UPDATE',
     _table: readModelMeta(_),
     values,
     where,
     limit,
-  } as IBuildableUpdateQuery as any;
+  }) as IBuildableUpdateQuery as any;
 }
 
 export function Delete<T extends TableMetaProvider>(_: T): IDeleteBuilder<InstanceType<T>> & IBuildableDeleteQuery {
-  return {
+  return fix({
     _type: 'DELETE',
     _table: readModelMeta(_),
     where,
     limit,
-  } as IBuildableDeleteQuery as any;
+  }) as IBuildableDeleteQuery as any;
 }

@@ -224,6 +224,8 @@ export interface ISelectBuilder<T> extends IWhereHandler<T> {
   where(builder: WhereBuilder<T>): this
   where(value: Partial<T>): this
   limit(limit: number): this
+
+  asScalar<T = number>(): IOperandable<T>
 }
 
 export interface IInsertBuilder<T> extends IValuesHandler<T> {}

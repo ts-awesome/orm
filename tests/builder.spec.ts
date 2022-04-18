@@ -1,7 +1,7 @@
 import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSymbol, Update, Upsert, of} from '../dist';
 import { Employee, Person, Tag } from './models';
 import { TableRef, readModelMeta } from '../dist/builder';
-import {exists} from "../src";
+import {count, dbField, dbTable, exists} from "../dist";
 
 
 const tableInfo = readModelMeta(Person);
@@ -338,21 +338,6 @@ describe('Select', () => {
   it('subquery on self', () => {
     const query = Select(Person).where(({id}) => exists(Select(alias(Person, 'person_filter')).where(({id: _}) => _.eq(id))));
 
-    {
-      const x = (query as any)._where[0]._operands[0];
-      delete x.columns;
-      delete x.groupBy;
-      delete x.having;
-      delete x.join;
-      delete x.joinFull;
-      delete x.joinLeft;
-      delete x.joinRight;
-      delete x.limit;
-      delete x.offset;
-      delete x.orderBy;
-      delete x.where;
-    }
-
     const expectation = {
       _where: [{
         "_operands": [{
@@ -383,6 +368,162 @@ describe('Select', () => {
 
     expect(query._where).toStrictEqual(expectation._where);
   })
+
+  it ('sum of subqueries', () => {
+    @dbTable('actions')
+    class PersonAction {
+      @dbField public personId!: number;
+      @dbField public action!: string;
+      @dbField public created!: Date;
+    }
+
+    const ts = new Date(Date.now() - 3600);
+
+    const query = Select(Person)
+      .columns(({uid}) => [
+        uid,
+        alias(
+          Select(PersonAction)
+            .columns(() => [count()])
+            .where(({personId, action, created}) => and(
+              personId.eq(of(Person, 'id')),
+              action.eq('a'),
+              created.gte(ts)
+            ))
+            .asScalar()
+          .mul(1).add(
+            Select(PersonAction)
+              .columns(() => [count()])
+              .where(({personId, action, created}) => and(
+                personId.eq(of(Person, 'id')),
+                action.eq('b'),
+                created.gte(ts)
+              ))
+            .asScalar().mul(100),
+          ).add(
+            Select(PersonAction)
+              .columns(() => [count()])
+              .where(({personId, action, created}) => and(
+                personId.eq(of(Person, 'id')),
+                action.eq('c'),
+                created.gte(ts)
+              ))
+            .asScalar().mul(100),
+          ),
+          'score'
+        )
+    ]).orderBy(() => [{_column: 'score'}])
+
+    const expected = [{"_column": {"table": "Person", "name": "uid", "wrapper": undefined}}, {
+      "_alias": "score", "_operands": [{
+        "_operator": "+", "_operands": [{
+          "_operator": "+",
+          "_operands": [{
+            "_operator": "*",
+            "_operands": [{
+              "_operator": "SUBQUERY",
+              "_operands": [{
+                "_type": "SELECT",
+                "_table": PersonAction[TableMetadataSymbol],
+                "_alias": null,
+                "_distinct": false,
+                "_columns": [{"_func": "COUNT", "_args": ["*"]}],
+                "_where": [{
+                  "_operator": "AND",
+                  "_operands": [{
+                    "_operator": "=",
+                    "_operands": [{"_column": {"table": "actions", "name": "personId", "wrapper": undefined}}, {
+                      "_column": {
+                        "table": "Person",
+                        "name": "id"
+                      }
+                    }]
+                  }, {
+                    "_operator": "=",
+                    "_operands": [{"_column": {"table": "actions", "name": "action", "wrapper": undefined}}, "a"]
+                  }, {
+                    "_operator": ">=",
+                    "_operands": [{"_column": {"table": "actions", "name": "created", "wrapper": undefined}}, ts]
+                  }]
+                }]
+              }]
+            }, 1]
+          }, {
+            "_operator": "*",
+            "_operands": [{
+              "_operator": "SUBQUERY",
+              "_operands": [{
+                "_type": "SELECT",
+                "_table": PersonAction[TableMetadataSymbol],
+                "_alias": null,
+                "_distinct": false,
+                "_columns": [{"_func": "COUNT", "_args": ["*"]}],
+                "_where": [{
+                  "_operator": "AND",
+                  "_operands": [{
+                    "_operator": "=",
+                    "_operands": [{"_column": {"table": "actions", "name": "personId", "wrapper": undefined}}, {
+                      "_column": {
+                        "table": "Person",
+                        "name": "id"
+                      }
+                    }]
+                  }, {
+                    "_operator": "=",
+                    "_operands": [{"_column": {"table": "actions", "name": "action", "wrapper": undefined}}, "b"]
+                  }, {
+                    "_operator": ">=",
+                    "_operands": [{"_column": {"table": "actions", "name": "created", "wrapper": undefined}}, ts]
+                  }]
+                }]
+              }]
+            }, 100]
+          }]
+        }, {
+          "_operator": "*",
+          "_operands": [{
+            "_operator": "SUBQUERY",
+            "_operands": [{
+              "_type": "SELECT",
+              "_table": PersonAction[TableMetadataSymbol],
+              "_alias": null,
+              "_distinct": false,
+              "_columns": [{"_func": "COUNT", "_args": ["*"]}],
+              "_where": [{
+                "_operator": "AND",
+                "_operands": [{
+                  "_operator": "=",
+                  "_operands": [{"_column": {"table": "actions", "name": "personId", "wrapper": undefined}}, {
+                    "_column": {
+                      "table": "Person",
+                      "name": "id"
+                    }
+                  }]
+                }, {
+                  "_operator": "=",
+                  "_operands": [{"_column": {"table": "actions", "name": "action", "wrapper": undefined}}, "c"]
+                }, {
+                  "_operator": ">=",
+                  "_operands": [{"_column": {"table": "actions", "name": "created", "wrapper": undefined}}, ts]
+                }]
+              }]
+            }]
+          }, 100]
+        }]
+      }]
+    }];
+
+    expect(query._columns).toStrictEqual(expected);
+  })
+
+  it ('invalid sub queries', () => {
+    try {
+      Select(Person).columns(['age', 'uid']).asScalar();
+      fail('expected to throw');
+    } catch (e) {
+      // ignore
+    }
+  });
 });
 
 describe('Insert', () => {

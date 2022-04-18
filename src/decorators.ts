@@ -2,10 +2,7 @@ import {
   ITableInfo,
   IFieldInfo,
   WhereBuilder,
-  IBuildableSubSelectQuery,
-  Queryable,
   SubQueryBuilder,
-  TableMetaProvider
 } from './interfaces';
 import {TableMetadataSymbol} from "./symbols";
 
