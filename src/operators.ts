@@ -54,9 +54,14 @@ export function desc<T>(value: Column<T>|IOperandable<T>): Order {
   return <any>{...(<any>value), _order: 'DESC',}
 }
 
+export function of<T = unknown>(_: null, field: string): IOperandable<T>;
 export function of<X extends TableMetaProvider, R=InstanceType<X>, F extends keyof R = keyof R>(_: X, field: F): IOperandable<R[F]>;
 export function of<X extends TableMetaProvider, R=InstanceType<X>, F extends keyof R = keyof R>(_: ITableRef<X>, field: F): IOperandable<R[F]>;
 export function of(_: unknown, field: string): IOperandable<any> {
+  if (_ === null) {
+    return (new ColumnWrapper({name: field}));
+  }
+
   const {tableName, fields}: ITableInfo = _[TableMetadataSymbol] ?? _;
 
   if (!fields.has(field)) {

@@ -412,7 +412,7 @@ describe('Select', () => {
           ),
           'score'
         )
-    ]).orderBy(() => [{_column: 'score'}])
+    ]).orderBy(() => [desc(of(null, 'score'))])
 
     const expected = [{"_column": {"table": "Person", "name": "uid", "wrapper": undefined}}, {
       "_alias": "score", "_operands": [{
@@ -514,6 +514,13 @@ describe('Select', () => {
     }];
 
     expect(query._columns).toStrictEqual(expected);
+
+    expect(query._orderBy).toStrictEqual([{
+      _column: {
+        name: 'score',
+      },
+      _order: "DESC"
+    }]);
   })
 
   it ('invalid sub queries', () => {
