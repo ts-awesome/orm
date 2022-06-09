@@ -3,7 +3,7 @@ import {
   IBuildableQueryCompiler,
   IQueryData, IQueryDriver,
   IQueryExecutor,
-  IQueryExecutorProvider, ITransaction,
+  IQueryExecutorProvider, IsolationLevel, ITransaction,
   TableMetaProvider
 } from "./interfaces";
 import {injectable} from "inversify";
@@ -33,14 +33,15 @@ export abstract class BaseExecutorProvider<TQuery> implements IQueryExecutorProv
 }
 
 @injectable()
-export abstract class BaseTransaction<TQuery, R extends IQueryData = IQueryData> extends BaseExecutor<TQuery, R> implements ITransaction<TQuery, R> {
+export abstract class BaseTransaction<TQuery, R extends IQueryData = IQueryData, IL = IsolationLevel> extends BaseExecutor<TQuery, R> implements ITransaction<TQuery, R, IL> {
   readonly finished: boolean;
   abstract commit(): Promise<void>;
   abstract rollback(): Promise<void>;
+  abstract setIsolationLevel(isolationLevel: IL): Promise<void>;
 }
 
 @injectable()
-export abstract class BaseDriver<TQuery, R extends IQueryData = IQueryData> extends BaseExecutor<TQuery, R> implements IQueryDriver<TQuery, R> {
-  abstract begin(): Promise<ITransaction<TQuery, R>>;
+export abstract class BaseDriver<TQuery, R extends IQueryData = IQueryData, IL = IsolationLevel> extends BaseExecutor<TQuery, R> implements IQueryDriver<TQuery, R, IL> {
+  abstract begin(isolationLevel?: IL): Promise<ITransaction<TQuery, R, IL>>;
   abstract end(): Promise<void>;
 }
