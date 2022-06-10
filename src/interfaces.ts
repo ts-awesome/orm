@@ -251,7 +251,7 @@ export interface IQueryExecutor<T, R = IQueryData> {
 // noinspection JSUnusedGlobalSymbols
 export const enum IsolationLevel {
   Serializable = 'SERIALIZABLE',
-  RepeatableReads = 'REPEATABLE READ',
+  RepeatableRead = 'REPEATABLE READ',
   ReadCommitted = 'READ COMMITTED',
   ReadUncommitted = 'READ UNCOMMITTED',
 }
