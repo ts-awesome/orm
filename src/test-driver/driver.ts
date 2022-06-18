@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import { TestExecutor } from './executor';
-import { IQueryDriver, ITransaction } from '../';
+import {IQueryDriver, IsolationLevel, ITransaction} from '../';
 import {TestQuery, TestQueryResult} from './interfaces';
 import { TestTransaction } from './transaction';
 
@@ -12,8 +12,8 @@ export class TestDriver extends TestExecutor implements IQueryDriver<TestQuery, 
     return this._active;
   }
 
-  public async begin(): Promise<ITransaction<TestQuery, TestQueryResult>> {
-    return new TestTransaction();
+  public async begin(isolationLevel?: IsolationLevel): Promise<ITransaction<TestQuery, TestQueryResult>> {
+    return new TestTransaction(isolationLevel);
   }
 
   public end(): Promise<void> {

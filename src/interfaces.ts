@@ -224,6 +224,8 @@ export interface ISelectBuilder<T> extends IWhereHandler<T> {
   where(builder: WhereBuilder<T>): this
   where(value: Partial<T>): this
   limit(limit: number): this
+
+  asScalar<T = number>(): IOperandable<T>
 }
 
 export interface IInsertBuilder<T> extends IValuesHandler<T> {}
@@ -246,14 +248,23 @@ export interface IQueryExecutor<T, R = IQueryData> {
   execute<X extends TableMetaProvider>(query: T, Model: X, sensitive?: boolean): Promise<ReadonlyArray<InstanceType<X>>>;
 }
 
-export interface ITransaction<TQuery, R = IQueryData> extends IQueryExecutor<TQuery, R> {
+// noinspection JSUnusedGlobalSymbols
+export const enum IsolationLevel {
+  Serializable = 'SERIALIZABLE',
+  RepeatableRead = 'REPEATABLE READ',
+  ReadCommitted = 'READ COMMITTED',
+  ReadUncommitted = 'READ UNCOMMITTED',
+}
+
+export interface ITransaction<TQuery, R = IQueryData, IL = IsolationLevel> extends IQueryExecutor<TQuery, R> {
   readonly finished: boolean;
   commit(): Promise<void>;
   rollback(): Promise<void>;
+  setIsolationLevel(isolationLevel: IL): Promise<void>;
 }
 
-export interface IQueryDriver<TQuery, R = IQueryData> extends IQueryExecutor<TQuery, R> {
-  begin(): Promise<ITransaction<TQuery, R>>;
+export interface IQueryDriver<TQuery, R = IQueryData, IL = IsolationLevel> extends IQueryExecutor<TQuery, R> {
+  begin(isolationLevel?: IL): Promise<ITransaction<TQuery, R, IL>>;
   end(): Promise<void>;
 }
 

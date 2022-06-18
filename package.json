@@ -1,9 +1,13 @@
 {
   "name": "@ts-awesome/orm",
   "version": "0.0.0",
-  "description": "TypeScript ORM",
+  "description": "TypeScript friendly minimalistic ORM",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ts-awesome/orm"
+  },
   "scripts": {
     "build:dev": "tsc --project tsconfig.json",
     "build": "npm run build:dev && cp src/wrappers* dist/",
