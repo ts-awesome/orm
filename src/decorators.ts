@@ -56,7 +56,7 @@ export function dbTable<TFunction extends Function>(...args: any[]): ClassDecora
   }
 }
 
-interface IDBFieldMeta extends Omit<IFieldInfo, 'getValue' | 'relatedTo' | 'name'> {
+interface IDBFieldMeta extends Omit<IFieldInfo, 'getValue' | 'relatedTo' | 'name' | 'builder'> {
   name?: string;
 }
 
