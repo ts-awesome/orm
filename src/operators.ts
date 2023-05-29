@@ -74,3 +74,7 @@ export function of(_: unknown, field: string): IOperandable<any> {
 export function alias<T>(expr: T | IOperandable<T>, name: string): IOperandable<T> {
   return {_alias: name, _operands: [expr]} as any;
 }
+
+export function cast<R=unknown, T=unknown>(expr: T | IOperandable<T>, type: string): IOperandable<R> {
+  return new Operandable('CAST', [expr, type]) as IOperandable<R>
+}

@@ -28,18 +28,18 @@ describe('Select', () => {
 
     const expectation = {
       default: [
-        {_column: {table: tableName, name: 'name', wrapper: undefined}},
-        {_column: {table: tableName, name: 'age', wrapper: undefined}}
+        {_column: {table: tableName, name: 'name'}},
+        {_column: {table: tableName, name: 'age'}}
       ],
       alias: [
-        {_alias: nameAlias, _operands: [{_column: {table: tableName, name: 'name', wrapper: undefined}}]}
+        {_alias: nameAlias, _operands: [{_column: {table: tableName, name: 'name'}}]}
       ],
       of: [
         {_column: {table: readModelMeta(Employee).tableName, name: 'company'}}
       ],
       expression: [
-        {_operator: '*', _operands: [{_column: {table: tableName, name: 'age', wrapper: undefined}}, coefficient]},
-        {_func: 'MAX', _args: [{_column: {table: tableName, name: 'age', wrapper: undefined}}]}
+        {_operator: '*', _operands: [{_column: {table: tableName, name: 'age'}}, coefficient]},
+        {_func: 'MAX', _args: [{_column: {table: tableName, name: 'age'}}]}
       ]
     };
 
@@ -65,7 +65,7 @@ describe('Select', () => {
       _alias: undefined,
       _type: joinTypes.inner,
       _condition: {
-        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: employeeTableInfo.tableName, name: `personId`, wrapper: undefined}}],
+        _operands: [{_column: {table: tableName, name: 'id'}}, {_column: {table: employeeTableInfo.tableName, name: `personId`}}],
         _operator: '='
       }
     }];
@@ -74,7 +74,7 @@ describe('Select', () => {
       _alias: undefined,
       _type: joinTypes.left,
       _condition: {
-        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: employeeTableInfo.tableName, name: `personId`, wrapper: undefined}}],
+        _operands: [{_column: {table: tableName, name: 'id'}}, {_column: {table: employeeTableInfo.tableName, name: `personId`}}],
         _operator: '='
       }
     }];
@@ -83,7 +83,7 @@ describe('Select', () => {
       _alias: undefined,
       _type: joinTypes.right,
       _condition: {
-        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: employeeTableInfo.tableName, name: `personId`, wrapper: undefined}}],
+        _operands: [{_column: {table: tableName, name: 'id'}}, {_column: {table: employeeTableInfo.tableName, name: `personId`}}],
         _operator: '='
       }
     }];
@@ -92,7 +92,7 @@ describe('Select', () => {
       _alias: undefined,
       _type: joinTypes.full,
       _condition: {
-        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: employeeTableInfo.tableName, name: `personId`, wrapper: undefined}}],
+        _operands: [{_column: {table: tableName, name: 'id'}}, {_column: {table: employeeTableInfo.tableName, name: `personId`}}],
         _operator: '='
       }
     }];
@@ -119,7 +119,7 @@ describe('Select', () => {
       _alias: tableRef.tableName,
       _type: joinTypes.inner,
       _condition: {
-        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: tableRef.tableName, name: `personId`, wrapper: undefined}}],
+        _operands: [{_column: {table: tableName, name: 'id'}}, {_column: {table: tableRef.tableName, name: `personId`}}],
         _operator: '='
       }
     }];
@@ -128,7 +128,7 @@ describe('Select', () => {
       _alias: tableRef.tableName,
       _type: joinTypes.left,
       _condition: {
-        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: tableRef.tableName, name: `personId`, wrapper: undefined}}],
+        _operands: [{_column: {table: tableName, name: 'id'}}, {_column: {table: tableRef.tableName, name: `personId`}}],
         _operator: '='
       }
     }];
@@ -137,7 +137,7 @@ describe('Select', () => {
       _alias: tableRef.tableName,
       _type: joinTypes.right,
       _condition: {
-        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: tableRef.tableName, name: `personId`, wrapper: undefined}}],
+        _operands: [{_column: {table: tableName, name: 'id'}}, {_column: {table: tableRef.tableName, name: `personId`}}],
         _operator: '='
       }
     }];
@@ -146,7 +146,7 @@ describe('Select', () => {
       _alias: tableRef.tableName,
       _type: joinTypes.full,
       _condition: {
-        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, {_column: {table: tableRef.tableName, name: `personId`, wrapper: undefined}}],
+        _operands: [{_column: {table: tableName, name: 'id'}}, {_column: {table: tableRef.tableName, name: `personId`}}],
         _operator: '='
       }
     }];
@@ -162,8 +162,8 @@ describe('Select', () => {
     const expectation = [{
       _operator: 'AND',
       _operands: [
-        {_operator: '=', _operands: [{_column: {table: tableName, name: 'age', wrapper: undefined}}, person.age]},
-        {_operator: 'LIKE', _operands: [{_column: {table: tableName, name: 'name', wrapper: undefined}}, person.name]},
+        {_operator: '=', _operands: [{_column: {table: tableName, name: 'age'}}, person.age]},
+        {_operator: 'LIKE', _operands: [{_column: {table: tableName, name: 'name'}}, person.name]},
       ]
     }];
     expect(query._where).toStrictEqual(expectation);
@@ -208,7 +208,7 @@ describe('Select', () => {
             _operator: 'SUBQUERY',
             _operands: [
               {
-                _columns: [{_column: { table: "Tag", name: "name", wrapper: undefined}}],
+                _columns: [{_column: { table: "Tag", name: "name"}}],
                 _table: readModelMeta(Tag),
                 _alias: null,
                 _type: "SELECT",
@@ -226,14 +226,12 @@ describe('Select', () => {
                               _column: {
                                 name: 'id',
                                 table: "Tag",
-                                wrapper: undefined
                               }
                             },
                             {
                               _column: {
                                 name: 'tag',
                                 table: "TagPerson",
-                                wrapper: undefined
                               }
                             }
                           ],
@@ -245,7 +243,6 @@ describe('Select', () => {
                               _column: {
                                 name: 'person',
                                 table: "TagPerson",
-                                wrapper: undefined
                               }
                             },
                             {
@@ -280,13 +277,13 @@ describe('Select', () => {
       .having(({salary}) => sum(salary).gt(salaryRate));
 
     const expectation = {
-      _columns: [{_func: 'SUM', _args: [{_column: {table: employeeTableName, name: 'salary', wrapper: undefined}}]}],
-      _groupBy: [{_column: {table: employeeTableName, name: 'company', wrapper: undefined}}],
+      _columns: [{_func: 'SUM', _args: [{_column: {table: employeeTableName, name: 'salary'}}]}],
+      _groupBy: [{_column: {table: employeeTableName, name: 'company'}}],
       _having: [{
         _operator: '>',
         _operands: [{
           _func: 'SUM',
-          _args: [{_column: {table: employeeTableName, name: 'salary', wrapper: undefined}}]
+          _args: [{_column: {table: employeeTableName, name: 'salary'}}]
         }, salaryRate]
       }]
     };
@@ -299,7 +296,7 @@ describe('Select', () => {
   it('Group by', () => {
     const queryThroughList = Select(Person).groupBy(['city']);
     const queryThroughBuilder = Select(Person).groupBy(({city}) => [city]);
-    const expectation = [{_column: {table: tableName, name: 'city', wrapper: undefined}}];
+    const expectation = [{_column: {table: tableName, name: 'city'}}];
 
     expect(queryThroughList._groupBy).toStrictEqual(expectation);
     expect(queryThroughBuilder._groupBy).toStrictEqual(expectation);
@@ -312,9 +309,9 @@ describe('Select', () => {
     const descOrder = Select(Person).orderBy(({city}) => [desc(city)]);
 
     const expectation = {
-      default: [{_column: {table: tableName, name: 'city', wrapper: undefined}}],
-      asc: [{_column: {table: tableName, name: 'city', wrapper: undefined}, _order: 'ASC'}],
-      desc: [{_column: {table: tableName, name: 'city', wrapper: undefined}, _order: 'DESC'}]
+      default: [{_column: {table: tableName, name: 'city'}}],
+      asc: [{_column: {table: tableName, name: 'city'}, _order: 'ASC'}],
+      desc: [{_column: {table: tableName, name: 'city'}, _order: 'DESC'}]
     };
 
     expect(orderByThroughList._orderBy).toStrictEqual(expectation.default);
@@ -342,22 +339,21 @@ describe('Select', () => {
       _where: [{
         "_operands": [{
           "_alias": "person_filter",
+          "_columns": [
+            { "_column": { name: 'id', table: 'person_filter' }},
+            { "_column": { name: 'uid', table: 'person_filter' }},
+            { "_column": { name: 'name', table: 'person_filter' }},
+            { "_column": { name: 'age', table: 'person_filter' }},
+            { "_column": { name: 'city', table: 'person_filter' }},
+          ],
           "_distinct": false,
           "_table": Person[TableMetadataSymbol],
           "_type": "SELECT",
           "_where": [{
             "_operands": [{
-              "_column": {
-                "name": "id",
-                "table": "person_filter",
-                "wrapper": undefined,
-              },
+              "_column": { "name": "id", "table": "person_filter", },
             }, {
-              "_column": {
-                "name": "id",
-                "table": "Person",
-                "wrapper": undefined,
-              },
+              "_column": { "name": "id", "table": "Person", },
             }],
             "_operator": "=",
           }]
@@ -414,7 +410,7 @@ describe('Select', () => {
         )
     ]).orderBy(() => [desc(of(null, 'score'))])
 
-    const expected = [{"_column": {"table": "Person", "name": "uid", "wrapper": undefined}}, {
+    const expected = [{"_column": {"table": "Person", "name": "uid"}}, {
       "_alias": "score", "_operands": [{
         "_operator": "+", "_operands": [{
           "_operator": "+",
@@ -432,7 +428,7 @@ describe('Select', () => {
                   "_operator": "AND",
                   "_operands": [{
                     "_operator": "=",
-                    "_operands": [{"_column": {"table": "actions", "name": "personId", "wrapper": undefined}}, {
+                    "_operands": [{"_column": {"table": "actions", "name": "personId"}}, {
                       "_column": {
                         "table": "Person",
                         "name": "id"
@@ -440,10 +436,10 @@ describe('Select', () => {
                     }]
                   }, {
                     "_operator": "=",
-                    "_operands": [{"_column": {"table": "actions", "name": "action", "wrapper": undefined}}, "a"]
+                    "_operands": [{"_column": {"table": "actions", "name": "action"}}, "a"]
                   }, {
                     "_operator": ">=",
-                    "_operands": [{"_column": {"table": "actions", "name": "created", "wrapper": undefined}}, ts]
+                    "_operands": [{"_column": {"table": "actions", "name": "created"}}, ts]
                   }]
                 }]
               }]
@@ -462,7 +458,7 @@ describe('Select', () => {
                   "_operator": "AND",
                   "_operands": [{
                     "_operator": "=",
-                    "_operands": [{"_column": {"table": "actions", "name": "personId", "wrapper": undefined}}, {
+                    "_operands": [{"_column": {"table": "actions", "name": "personId"}}, {
                       "_column": {
                         "table": "Person",
                         "name": "id"
@@ -470,10 +466,10 @@ describe('Select', () => {
                     }]
                   }, {
                     "_operator": "=",
-                    "_operands": [{"_column": {"table": "actions", "name": "action", "wrapper": undefined}}, "b"]
+                    "_operands": [{"_column": {"table": "actions", "name": "action"}}, "b"]
                   }, {
                     "_operator": ">=",
-                    "_operands": [{"_column": {"table": "actions", "name": "created", "wrapper": undefined}}, ts]
+                    "_operands": [{"_column": {"table": "actions", "name": "created"}}, ts]
                   }]
                 }]
               }]
@@ -493,7 +489,7 @@ describe('Select', () => {
                 "_operator": "AND",
                 "_operands": [{
                   "_operator": "=",
-                  "_operands": [{"_column": {"table": "actions", "name": "personId", "wrapper": undefined}}, {
+                  "_operands": [{"_column": {"table": "actions", "name": "personId"}}, {
                     "_column": {
                       "table": "Person",
                       "name": "id"
@@ -501,10 +497,10 @@ describe('Select', () => {
                   }]
                 }, {
                   "_operator": "=",
-                  "_operands": [{"_column": {"table": "actions", "name": "action", "wrapper": undefined}}, "c"]
+                  "_operands": [{"_column": {"table": "actions", "name": "action"}}, "c"]
                 }, {
                   "_operator": ">=",
-                  "_operands": [{"_column": {"table": "actions", "name": "created", "wrapper": undefined}}, ts]
+                  "_operands": [{"_column": {"table": "actions", "name": "created"}}, ts]
                 }]
               }]
             }]
@@ -544,10 +540,10 @@ describe('Insert', () => {
   it('Insert record', () => {
     const query = Insert(Person).values(person);
     const expectation = {
-      id: {value: person.id, wrapper: undefined},
-      name: {value: person.name, wrapper: undefined},
-      age: {value: person.age, wrapper: undefined},
-      city: {value: person.city, wrapper: undefined},
+      id: person.id,
+      name: person.name,
+      age: person.age,
+      city: person.city,
     };
     expect(query._values).toStrictEqual(expectation);
     Insert(Person).values({...person, uid: 'a80ec30e-791c-4499-a243-70af8b2bf7ba'});
@@ -571,10 +567,10 @@ describe('Upsert', () => {
     const withConflict = Upsert(Person).values(person).conflict('idx');
     const expectation = {
       values: {
-        id: {value: person.id, wrapper: undefined},
-        name: {value: person.name, wrapper: undefined},
-        age: {value: person.age, wrapper: undefined},
-        city: {value: person.city, wrapper: undefined},
+        id: person.id,
+        name: person.name,
+        age: person.age,
+        city: person.city,
       },
       conflictExp: {_columns: ['id'], _where: undefined}
     };
@@ -617,14 +613,14 @@ describe('Update', () => {
     const query = Update(Person).values(person).where(({id}) => id.eq(person.id)).limit(limit);
     const expectation = {
       values: {
-        id: {value: person.id, wrapper: undefined},
-        name: {value: person.name, wrapper: undefined},
-        age: {value: person.age, wrapper: undefined},
-        city: {value: person.city, wrapper: undefined},
+        id: person.id,
+        name: person.name,
+        age: person.age,
+        city: person.city,
       },
       where: [{
         _operator: '=',
-        _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, person.id]
+        _operands: [{_column: {table: tableName, name: 'id'}}, person.id]
       }]
     };
     expect(query._values).toStrictEqual(expectation.values);
@@ -646,7 +642,7 @@ describe('Delete', () => {
     const query = Delete(Person).where(({id}) => id.eq(person.id)).limit(limit);
     const expectation = [{
       _operator: '=',
-      _operands: [{_column: {table: tableName, name: 'id', wrapper: undefined}}, person.id]
+      _operands: [{_column: {table: tableName, name: 'id'}}, person.id]
     }];
     expect(query._where).toStrictEqual(expectation);
     expect(query._limit).toBe(limit);

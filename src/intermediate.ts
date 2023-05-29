@@ -3,7 +3,6 @@ import {IBuildableSubSelectQuery} from './interfaces';
 export interface IColumnRef {
   table?: string;
   name: string;
-  wrapper?(name: string): string;
 }
 
 export interface IUnaryOperation {
@@ -35,7 +34,8 @@ export interface IReference {
   _column: IColumnRef;
 }
 
-export type IExpression = IFunctionCallOperation | IReference | IMultiOperation | ITernaryOperation | IBinaryOperation | IUnaryOperation | IBuildableSubSelectQuery | IAlias | 'NULL' | '*';
+export type IExpression = IFunctionCallOperation | IReference | IMultiOperation | ITernaryOperation | IBinaryOperation
+  | IUnaryOperation | IBuildableSubSelectQuery | IAlias | INamedParameter | IConst | IUnnamedParameter | 'NULL' | '*';
 
 export interface IOrderBy {
   _column: IColumnRef;
@@ -52,4 +52,16 @@ export interface IJoin {
 export interface IAlias {
   _alias: string;
   _operands: IExpression;
+}
+
+export interface INamedParameter {
+  _named: string;
+}
+
+export interface IConst {
+  _const: null | string | number | boolean | (null | string | number | boolean)[];
+}
+
+export interface IUnnamedParameter {
+  _value: null | string | number | boolean | (null | string | number | boolean)[];
 }

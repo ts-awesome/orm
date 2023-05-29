@@ -1,3 +1,6 @@
+variables:
+  NODE_VERSION: 18
+
 stages:
 - build
 - publish
@@ -7,7 +10,7 @@ before_script:
 
 build:
   stage: build
-  image: node:14
+  image: node:$NODE_VERSION
   only:
   - master
   - develop
@@ -19,7 +22,7 @@ build:
 
 publish:
   stage: publish
-  image: node:14
+  image: node:$NODE_VERSION
   only:
   - tags
   script:

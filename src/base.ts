@@ -1,10 +1,11 @@
 import {
+  DbValueType,
   IBuildableQuery,
   IBuildableQueryCompiler,
   IQueryData, IQueryDriver,
   IQueryExecutor,
   IQueryExecutorProvider, IsolationLevel, ITransaction,
-  TableMetaProvider
+  TableMetaProvider, WithParams
 } from "./interfaces";
 import {injectable} from "inversify";
 import {reader} from "./reader";
@@ -16,15 +17,34 @@ export abstract class BaseCompiler<TQuery> implements IBuildableQueryCompiler<TQ
 
 @injectable()
 export abstract class BaseExecutor<TQuery, R extends IQueryData = IQueryData> implements IQueryExecutor<TQuery, R> {
-  execute(query: TQuery): Promise<readonly R[]>;
-  execute(query: TQuery, scalar: true): Promise<number>;
-  execute<X extends TableMetaProvider>(query: TQuery, Model: X, sensitive?: boolean): Promise<readonly InstanceType<X>[]>;
-  public async execute(query: TQuery, Model?: unknown | true, sensitive = false): Promise<any> {
+  execute(query: TQuery & WithParams): Promise<readonly R[]>;
+  execute(query: TQuery & WithParams, scalar: true): Promise<number>;
+  execute<X extends TableMetaProvider>(query: TQuery & WithParams, Model: X, sensitive?: boolean): Promise<readonly InstanceType<X>[]>;
+  public async execute(query: TQuery & WithParams, Model?: unknown | true, sensitive = false): Promise<any> {
+    query = {
+      ...query,
+      params: {
+        ...this._namedParameters,
+        ...query.params,
+      }
+    }
     const result = await this.do(query);
     return reader(result, Model as any, sensitive);
   }
 
-  protected abstract do(query: TQuery): Promise<readonly R[]>;
+  protected abstract do(query: TQuery & WithParams): Promise<readonly R[]>;
+
+  protected _namedParameters: Record<string, DbValueType> = {};
+
+  public get namedParameters(): Readonly<Record<string, DbValueType>> {
+    return {...this._namedParameters};
+  }
+  public setNamedParameter(name: string, value: DbValueType): void {
+    this._namedParameters[name] = value;
+  }
+  public removeNamedParameter(name: string): void {
+    delete this._namedParameters[name];
+  }
 }
 
 @injectable()

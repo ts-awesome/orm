@@ -1,19 +1,26 @@
-import {ColumnWrapper, Operandable} from './wrappers';
+import {AliasWrapper, ColumnWrapper, Operandable, UnnamedParameter} from './wrappers';
 import {
   ColumnsBuilder,
   ColumnsList,
   GroupByBuilder,
   HavingBuilder,
+  IBuildableDeleteQuery,
+  IBuildableInsertQuery,
   IBuildableQuery,
   IBuildableSelectQuery,
   IBuildableSubSelectQuery,
+  IBuildableUpdateQuery,
+  IBuildableUpsertQuery,
   IBuildableValuesPartial,
   IBuildableWherePartial,
   IDeleteBuilder,
+  IFieldInfo,
+  IIndexInfo,
   IInsertBuilder,
   IOperandable,
   ISelectBuilder,
   ITableInfo,
+  ITableRef,
   IUpdateBuilder,
   IUpsertBuilder,
   JoinBuilder,
@@ -21,12 +28,9 @@ import {
   TableMetaProvider,
   ValuesBuilder,
   WhereBuilder,
-  IFieldInfo,
-  IBuildableUpsertQuery,
-  ITableRef, IBuildableDeleteQuery, IBuildableUpdateQuery, IBuildableInsertQuery, IIndexInfo,
 } from './interfaces';
 import {and} from './operators';
-import {IAlias, IColumnRef, IExpression, IReference} from "./intermediate";
+import {IAlias, IExpression, IReference} from "./intermediate";
 import {TableMetadataSymbol} from "./symbols";
 
 export interface IExpr {
@@ -38,7 +42,43 @@ export interface IExpr {
   _operands?: IExpr[] | [IBuildableQuery]
 }
 
-function proxy({tableName: originalTableName, fields, primaryKey}: ITableInfo, ignoreTableName?: boolean, alias?: string): any {
+function columnExpression(property: string, tableInfo: ITableInfo, ignoreTableName?: boolean, alias_?: string) {
+  const info = tableInfo.fields.get(property);
+  if (!info) {
+    throw new Error(`Property ${property} should be decorated with @dbField`);
+  }
+
+  const {name = property, kind} = info;
+  if (typeof kind === 'string' || typeof kind === 'symbol') {
+    throw new Error(`@dbField kind specified by string or symbol is not support since 1.0.0`);
+  }
+
+  const tableName = alias_ ?? tableInfo.tableName;
+  const ref = new ColumnWrapper({name, table: ignoreTableName ? undefined : tableName});
+  if (typeof kind?.readQuery !== 'function') {
+    return ref;
+  }
+
+  return new AliasWrapper(kind.readQuery(ref, proxy(tableInfo, ignoreTableName, alias_)), name);
+}
+
+function columnReference(property: string, tableInfo: ITableInfo, ignoreTableName?: boolean, alias?: string): IReference {
+  const info = tableInfo.fields.get(property);
+  if (!info) {
+    throw new Error(`Property ${property} should be decorated with @dbField`);
+  }
+
+  const {name = property, kind} = info;
+  if (typeof kind === 'string' || typeof kind === 'symbol') {
+    throw new Error(`@dbField kind specified by string or symbol is not support since 1.0.0`);
+  }
+
+  const tableName = alias ?? tableInfo.tableName;
+  return {_column: {name, table: ignoreTableName ? undefined : tableName}};
+}
+
+function proxy(meta: ITableInfo, ignoreTableName?: boolean, alias?: string): any {
+  const {tableName: originalTableName, fields, primaryKey} = meta;
   return new Proxy({}, {
     get(_, property: string) {
       const tableName = alias ?? originalTableName;
@@ -49,11 +89,7 @@ function proxy({tableName: originalTableName, fields, primaryKey}: ITableInfo, i
 
       const {builder, relatedTo, name} = fields.get(property);
       if (!relatedTo && !builder) {
-        const ref = resolveColumn(property, {tableName, fields})
-        if (ignoreTableName) {
-          ref.table = undefined;
-        }
-        return new ColumnWrapper(ref);
+        return columnExpression(property, meta, ignoreTableName, alias);
       }
 
       if (!primaryKey) {
@@ -62,9 +98,8 @@ function proxy({tableName: originalTableName, fields, primaryKey}: ITableInfo, i
 
       if (builder) {
         const pk: IOperandable<any> = new ColumnWrapper({table: tableName, name: primaryKey});
-        const query: IBuildableSubSelectQuery = builder(pk);
-        const stripped = Object.fromEntries(Object.entries(query).filter(([, value]) => typeof value !== 'function'));
-        return new Operandable('SUBQUERY', [stripped]);
+        const query: IBuildableSubSelectQuery = builder(pk, proxy(meta, ignoreTableName, alias));
+        return new Operandable('SUBQUERY', [strip(query)]);
       }
 
       return new Operandable('SUBQUERY', [{
@@ -87,43 +122,32 @@ function proxy({tableName: originalTableName, fields, primaryKey}: ITableInfo, i
   });
 }
 
-function treeOf<T>(_: Partial<T>, tableInfo: ITableInfo, alias?: string): any {
+function treeOf<T>(_: Partial<T>, tableInfo: ITableInfo, alias?: string): IExpression {
   validateModel(_, tableInfo);
-  const tableName = alias ?? tableInfo.tableName;
   return and(
     ...Object.keys(_)
-      .map(field => (new ColumnWrapper(resolveColumn(field as string, {tableName, fields: tableInfo.fields})) as IOperandable<T>).eq(_[field]))
-  );
+      .map(field => columnExpression(field, tableInfo, false, alias).eq(_[field]))
+  ) as never as IExpression;
 }
 
-function columnsOf<T>(_: ColumnsList<T>, {tableName: originaltableName, fields}: ITableInfo, alias?: string): IReference[] {
-  _.forEach(field => {
+function columnExpressionsOf<T>(_: ColumnsList<T>, tableInfo: ITableInfo, alias?: string): IExpression[] {
+  const {fields} = tableInfo;
+  for (const field of _) {
     if (!fields.has(field as string) || fields.get(field as string).relatedTo || fields.get(field as string).builder) {
-      throw new Error(`Field '${field}' should be decorated with @dbField`)
+      throw new Error(`Field '${field.toString()}' should be decorated with @dbField`);
     }
-  });
-  const tableName = alias ?? originaltableName;
-  return _.map(field => ({_column: resolveColumn(field as string, {tableName, fields})}));
+  }
+  return _.map(field => columnExpression(field as string, tableInfo, false, alias) as never as IExpression);
 }
 
-function resolveColumn(property: string, {tableName, fields}: ITableInfo): IColumnRef {
-
-  const info = fields.get(property);
-  if (!info) {
-    throw new Error(`Property ${property} should be decorated with @dbField`);
+function columnsOf<T>(_: ColumnsList<T>, tableInfo: ITableInfo, alias?: string): IReference[] {
+  const {fields} = tableInfo;
+  for (const field of _) {
+    if (!fields.has(field as string) || fields.get(field as string).relatedTo || fields.get(field as string).builder) {
+      throw new Error(`Field '${field.toString()}' should be decorated with @dbField`);
+    }
   }
-
-  const {name = property, kind} = info;
-  if (typeof kind === 'string' || typeof kind === 'symbol') {
-    throw new Error(`@dbField kind specified by string or symbol is not support since 1.0.0`);
-  }
-
-  return {
-    table: tableName,
-    name,
-    wrapper: kind?.readQuery,
-    // writer: kind?.writer,
-  }
+  return _.map(field => columnReference(field as string, tableInfo, false, alias));
 }
 
 function validateModel<T>(_: Partial<T>, tableInfo: ITableInfo): void {
@@ -157,25 +181,25 @@ function having<T>(this: IBuildableSelectQuery, _: HavingBuilder<T>) {
 function columns<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | ColumnsBuilder<T>) {
   this._columns = typeof _ === 'function'
     ? _(proxy(this._table, false, this._alias)) as IExpression[]
-    : columnsOf(_, this._table);
+    : columnExpressionsOf(_, this._table, this._alias);
   return this;
 }
 
 function orderBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | OrderBuilder<T>) {
   this._orderBy = typeof _ === 'function'
     ? _(proxy(this._table, false, this._alias)) as IReference[]
-    : columnsOf(_, this._table);
+    : columnsOf(_, this._table, this._alias);
   return this;
 }
 
 function groupBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | GroupByBuilder<T>) {
   this._groupBy = typeof _ === 'function'
     ?  _(proxy(this._table, false, this._alias)) as any as IReference[]
-    : columnsOf(_, this._table);
+    : columnsOf(_, this._table, this._alias);
   return this;
 }
 
-function values<T>(this: IBuildableValuesPartial, _: Partial<T> | ValuesBuilder<T>) {
+function values<T>(this: IBuildableValuesPartial<T>, _: Partial<T> | ValuesBuilder<T>) {
   if (typeof _ === 'function') {
     this._values = (_ as ValuesBuilder<T>)(proxy(this._table, false, this._alias));
   } else {
@@ -186,19 +210,22 @@ function values<T>(this: IBuildableValuesPartial, _: Partial<T> | ValuesBuilder<
       .map(prop => this._table.fields.get(prop))
       .filter(({relatedTo, builder}) => relatedTo == null && builder == null)
       .reduce((p: any, {getValue, kind, name}: IFieldInfo) => {
-        let value = getValue(_);
-        let wrapper: any = undefined;
+        let value: any = getValue(_);
 
         if (kind) {
           if (typeof kind === 'string' || typeof kind === 'symbol') {
             throw new Error(`DbField specified by string or symbol is not support since 1.0.0`);
           }
-          wrapper = kind.writeQuery;
 
-          const {writer = (x: any) => x} = kind;
-          value = writer(value);
+          const {writer, writeQuery} = kind;
+          if (typeof writer === 'function') {
+            value = writer(value);
+          }
+          if (typeof writeQuery === 'function') {
+            value = writeQuery(new UnnamedParameter(value), proxy(this._table, false, this._alias));
+          }
         }
-        return { ...p, [name]: {value, wrapper} };
+        return { ...p, [name]: value };
       }, {});
   }
   return this;
@@ -370,16 +397,30 @@ function fix<T>(x: T): T {
   return x;
 }
 
+function strip<T>(x: T): T {
+  return Object.fromEntries(Object.entries(x).filter(([, value]) => typeof value !== 'function')) as never;
+}
+
 export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, distinct = false): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
   function isAlias(x: any): x is IAlias {
     return x && typeof x._alias === 'string';
   }
 
+  const meta = readModelMeta(isAlias(_) ? _._operands[0] : _);
+
+  const keys = [...meta.fields.keys()]
+  const fields = keys
+    .filter(x => {
+      const info = meta.fields.get(x) as IFieldInfo | null;
+      return info && !info.sensitive && !info.builder && !info.relatedTo
+    });
+
   return fix({
     _type: 'SELECT',
-    _table: readModelMeta(isAlias(_) ? _._operands[0] : _),
+    _table: meta,
     _alias: isAlias(_) ? _._alias : null,
     _distinct: distinct,
+    _columns: columnExpressionsOf(fields, meta, isAlias(_) ? _._alias : undefined),
     columns,
     join,
     joinLeft,

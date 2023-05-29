@@ -3,15 +3,15 @@ import {Operandable} from "./wrappers";
 
 export type DbValueType = string | number | boolean | Date | null | undefined;
 
-export interface IDbField<T = any> {
-  readQuery?(name: string): string;
-  writeQuery?(name: string): string;
+export interface IDbField<T = any, X = any> {
+  readQuery?(reference: IOperandable, table: Queryable<X>): IOperandable;
+  writeQuery?(value: IOperandable, table: Queryable<X>): IOperandable;
   reader?(raw: DbValueType): T;
   writer?(value: T): DbValueType;
 }
 
 export interface SubQueryBuilder<T=number> {
-  (value: Operandable<T>): IBuildableSubSelectQuery
+  (value: Operandable<T>, table: Queryable<T>): IBuildableSubSelectQuery
 }
 
 declare type Class = new (...args: any) => any;
@@ -118,10 +118,10 @@ export interface IBuildableWherePartial {
   _limit?: number
 }
 
-export interface IBuildableValuesPartial {
+export interface IBuildableValuesPartial<T> {
   _table: ITableInfo
   _alias?: string
-  _values?: any
+  _values?: Values<T>
 }
 
 export interface IBuildableSelectQuery {
@@ -242,10 +242,21 @@ export interface IBuildableQueryCompiler<T> {
 
 export type IQueryData = { [key: string]: DbValueType }
 
+export interface WithParams {
+  params?: {
+    [key: string]: DbValueType;
+  };
+}
+
+
 export interface IQueryExecutor<T, R = IQueryData> {
-  execute(query: T): Promise<ReadonlyArray<R>>;
-  execute(query: T, scalar: true): Promise<number>;
-  execute<X extends TableMetaProvider>(query: T, Model: X, sensitive?: boolean): Promise<ReadonlyArray<InstanceType<X>>>;
+  execute(query: T & WithParams): Promise<ReadonlyArray<R>>;
+  execute(query: T & WithParams, scalar: true): Promise<number>;
+  execute<X extends TableMetaProvider>(query: T & WithParams, Model: X, sensitive?: boolean): Promise<ReadonlyArray<InstanceType<X>>>;
+
+  readonly namedParameters: Readonly<Record<string, DbValueType>>;
+  setNamedParameter(name: string, value: DbValueType): void;
+  removeNamedParameter(name: string): void;
 }
 
 // noinspection JSUnusedGlobalSymbols
