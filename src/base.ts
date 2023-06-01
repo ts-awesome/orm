@@ -9,6 +9,7 @@ import {
 } from "./interfaces";
 import {injectable} from "inversify";
 import {reader} from "./reader";
+import {NamedParameter} from "./wrappers";
 
 @injectable()
 export abstract class BaseCompiler<TQuery> implements IBuildableQueryCompiler<TQuery> {
@@ -39,11 +40,11 @@ export abstract class BaseExecutor<TQuery, R extends IQueryData = IQueryData> im
   public get namedParameters(): Readonly<Record<string, DbValueType>> {
     return {...this._namedParameters};
   }
-  public setNamedParameter(name: string, value: DbValueType): void {
-    this._namedParameters[name] = value;
+  public setNamedParameter<T extends DbValueType>(param: NamedParameter<T>, value: T): void {
+    this._namedParameters[(param as any)._named] = value;
   }
-  public removeNamedParameter(name: string): void {
-    delete this._namedParameters[name];
+  public removeNamedParameter(param: NamedParameter<unknown>): void {
+    delete this._namedParameters[(param as any)._named];
   }
 }
 

@@ -1,5 +1,5 @@
 import { IExpression, IJoin, IOrderBy, IReference } from './intermediate';
-import {Operandable} from "./wrappers";
+import {NamedParameter, Operandable} from "./wrappers";
 
 export type DbValueType = string | number | boolean | Date | null | undefined;
 
@@ -255,8 +255,8 @@ export interface IQueryExecutor<T, R = IQueryData> {
   execute<X extends TableMetaProvider>(query: T & WithParams, Model: X, sensitive?: boolean): Promise<ReadonlyArray<InstanceType<X>>>;
 
   readonly namedParameters: Readonly<Record<string, DbValueType>>;
-  setNamedParameter(name: string, value: DbValueType): void;
-  removeNamedParameter(name: string): void;
+  setNamedParameter<T extends DbValueType>(param: NamedParameter<T>, value: T): void;
+  removeNamedParameter(param: NamedParameter<unknown>): void;
 }
 
 // noinspection JSUnusedGlobalSymbols
