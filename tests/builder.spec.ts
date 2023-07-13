@@ -213,6 +213,7 @@ describe('Select', () => {
                 _alias: null,
                 _type: "SELECT",
                 _distinct: false,
+                "_for": undefined,
                 _joins: [
                   {
                     _alias: undefined,
@@ -307,17 +308,20 @@ describe('Select', () => {
     const defaultOrder = Select(Person).orderBy(({city}) => [city]);
     const ascOrder = Select(Person).orderBy(({city}) => [asc(city)]);
     const descOrder = Select(Person).orderBy(({city}) => [desc(city)]);
+    const numberedOrder = Select(Person).orderBy(() => [asc(0), desc(1)]);
 
     const expectation = {
       default: [{_column: {table: tableName, name: 'city'}}],
       asc: [{_column: {table: tableName, name: 'city'}, _order: 'ASC'}],
-      desc: [{_column: {table: tableName, name: 'city'}, _order: 'DESC'}]
+      desc: [{_column: {table: tableName, name: 'city'}, _order: 'DESC'}],
+      numbered: [{_column: 0, _order: 'ASC'}, {_column: 1, _order: 'DESC'}],
     };
 
     expect(orderByThroughList._orderBy).toStrictEqual(expectation.default);
     expect(defaultOrder._orderBy).toStrictEqual(expectation.default);
     expect(ascOrder._orderBy).toStrictEqual(expectation.asc);
     expect(descOrder._orderBy).toStrictEqual(expectation.desc);
+    expect(numberedOrder._orderBy).toStrictEqual(expectation.numbered);
   });
 
   it('Limit', () => {
@@ -347,6 +351,7 @@ describe('Select', () => {
             { "_column": { name: 'city', table: 'person_filter' }},
           ],
           "_distinct": false,
+          "_for": undefined,
           "_table": Person[TableMetadataSymbol],
           "_type": "SELECT",
           "_where": [{
@@ -423,6 +428,7 @@ describe('Select', () => {
                 "_table": PersonAction[TableMetadataSymbol],
                 "_alias": null,
                 "_distinct": false,
+                "_for": undefined,
                 "_columns": [{"_func": "COUNT", "_args": ["*"]}],
                 "_where": [{
                   "_operator": "AND",
@@ -453,6 +459,7 @@ describe('Select', () => {
                 "_table": PersonAction[TableMetadataSymbol],
                 "_alias": null,
                 "_distinct": false,
+                "_for": undefined,
                 "_columns": [{"_func": "COUNT", "_args": ["*"]}],
                 "_where": [{
                   "_operator": "AND",
@@ -484,6 +491,7 @@ describe('Select', () => {
               "_table": PersonAction[TableMetadataSymbol],
               "_alias": null,
               "_distinct": false,
+              "_for": undefined,
               "_columns": [{"_func": "COUNT", "_args": ["*"]}],
               "_where": [{
                 "_operator": "AND",

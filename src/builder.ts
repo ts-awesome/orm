@@ -24,7 +24,7 @@ import {
   IUpdateBuilder,
   IUpsertBuilder,
   JoinBuilder,
-  OrderBuilder,
+  OrderBuilder, SelectForOperation,
   TableMetaProvider,
   ValuesBuilder,
   WhereBuilder,
@@ -401,12 +401,10 @@ function strip<T>(x: T): T {
   return Object.fromEntries(Object.entries(x).filter(([, value]) => typeof value !== 'function')) as never;
 }
 
-export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, distinct = false): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
-  function isAlias(x: any): x is IAlias {
-    return x && typeof x._alias === 'string';
+function computeReadableColumns(meta: ITableInfo, alias?: string) {
+  if (!meta.fields) {
+    return []
   }
-
-  const meta = readModelMeta(isAlias(_) ? _._operands[0] : _);
 
   const keys = [...meta.fields.keys()]
   const fields = keys
@@ -415,12 +413,31 @@ export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, dist
       return info && !info.sensitive && !info.builder && !info.relatedTo
     });
 
+  return columnExpressionsOf(fields, meta, alias)
+}
+
+
+export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
+export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, distinct: true): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
+export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, forOp: SelectForOperation): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
+export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, forOp: SelectForOperation, distinct: true): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
+export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, ...args: unknown[]): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
+  function isAlias(x: any): x is IAlias {
+    return x && typeof x._alias === 'string';
+  }
+
+  const forOr: SelectForOperation = typeof args[0] === 'string' ? args.shift() as any : undefined;
+  const distinct: boolean = typeof args[0] === 'boolean' ? args.shift() as any : false;
+
+  const meta = readModelMeta(isAlias(_) ? _._operands[0] : _);
+
   return fix({
     _type: 'SELECT',
     _table: meta,
     _alias: isAlias(_) ? _._alias : null,
     _distinct: distinct,
-    _columns: columnExpressionsOf(fields, meta, isAlias(_) ? _._alias : undefined),
+    _for: forOr,
+    _columns: computeReadableColumns(meta, isAlias(_) ? _._alias : undefined),
     columns,
     join,
     joinLeft,
@@ -446,6 +463,7 @@ export function Insert<T extends TableMetaProvider>(_: T): IInsertBuilder<Instan
   return fix({
     _type: 'INSERT',
     _table: readModelMeta(_),
+    _columns: computeReadableColumns(readModelMeta(_)),
     values,
   }) as IBuildableInsertQuery as any;
 }
@@ -454,6 +472,7 @@ export function Upsert<T extends TableMetaProvider>(_: T): IUpsertBuilder<Instan
   return fix({
     _type: 'UPSERT',
     _table: readModelMeta(_),
+    _columns: computeReadableColumns(readModelMeta(_)),
     _limit: 1,
     values,
     where,
@@ -466,6 +485,7 @@ export function Update<T extends TableMetaProvider>(_: T): IUpdateBuilder<Instan
   return fix({
     _type: 'UPDATE',
     _table: readModelMeta(_),
+    _columns: computeReadableColumns(readModelMeta(_)),
     values,
     where,
     limit,
@@ -476,6 +496,7 @@ export function Delete<T extends TableMetaProvider>(_: T): IDeleteBuilder<Instan
   return fix({
     _type: 'DELETE',
     _table: readModelMeta(_),
+    _columns: computeReadableColumns(readModelMeta(_)),
     where,
     limit,
   }) as IBuildableDeleteQuery as any;

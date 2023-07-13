@@ -124,11 +124,13 @@ export interface IBuildableValuesPartial<T> {
   _values?: Values<T>
 }
 
+export type SelectForOperation = 'UPDATE' | 'NO KEY UPDATE' | 'SHARE' | 'KEY SHARE';
 export interface IBuildableSelectQuery {
   _type: 'SELECT'
   _table: ITableInfo
   _alias?: string
   _distinct?: boolean
+  _for?: SelectForOperation
   _columns?: IExpression[]
   _joins?: IJoin[]
   _where?: IExpression[]
@@ -154,12 +156,14 @@ export interface IBuildableSubSelectQuery {
 export interface IBuildableInsertQuery {
   _type: 'INSERT'
   _table: ITableInfo
+  _columns?: IExpression[]
   _values?: any
 }
 
 export interface IBuildableUpsertQuery {
   _type: 'UPSERT'
   _table: ITableInfo
+  _columns?: IExpression[]
   _alias?: string
   _values?: any
   _where?: IExpression[]
@@ -172,6 +176,7 @@ export interface IBuildableUpsertQuery {
 export interface IBuildableUpdateQuery {
   _type: 'UPDATE'
   _table: ITableInfo
+  _columns?: IExpression[]
   _values?: any
   _where?: IExpression[]
   _limit?: number
@@ -180,6 +185,7 @@ export interface IBuildableUpdateQuery {
 export interface IBuildableDeleteQuery {
   _type: 'DELETE'
   _table: ITableInfo
+  _columns?: IExpression[]
   _where?: IExpression[]
   _limit?: number
 }
