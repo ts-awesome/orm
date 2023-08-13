@@ -179,9 +179,9 @@ function having<T>(this: IBuildableSelectQuery, _: HavingBuilder<T>) {
 }
 
 function columns<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | ColumnsBuilder<T>) {
-  this._columns = typeof _ === 'function'
+  this._columns = (typeof _ === 'function'
     ? _(proxy(this._table, false, this._alias)) as IExpression[]
-    : columnExpressionsOf(_, this._table, this._alias);
+    : columnExpressionsOf(_, this._table, this._alias)).map(strip);
   return this;
 }
 
@@ -292,7 +292,7 @@ function join<X extends TableMetaProvider>(this: IBuildableSelectQuery, _: X, al
 function join<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...args: any[]) {
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
-  this._joins = this._joins || [];
+  this._joins = this._joins ?? [];
   const table = readModelMeta(_);
   this._joins.push({
     _tableName: table.tableName,
@@ -308,7 +308,7 @@ function joinLeft<X extends TableMetaProvider>(this: IBuildableSelectQuery, _: X
 function joinLeft<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...args: any[]) {
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
-  this._joins = this._joins || [];
+  this._joins = this._joins ?? [];
   const table = readModelMeta(_);
   this._joins.push({
     _tableName: table.tableName,
@@ -324,7 +324,7 @@ function joinRight<X extends TableMetaProvider>(this: IBuildableSelectQuery, _: 
 function joinRight<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...args: any[]) {
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
-  this._joins = this._joins || [];
+  this._joins = this._joins ?? [];
   const table = readModelMeta(_);
   this._joins.push({
     _tableName: table.tableName,
@@ -340,7 +340,7 @@ function joinFull<X extends TableMetaProvider>(this: IBuildableSelectQuery, _: X
 function joinFull<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...args: any[]) {
   const [_, alias, condition] = parseJoinArgs<X>(...args);
 
-  this._joins = this._joins || [];
+  this._joins = this._joins ?? [];
   const table = readModelMeta(_);
   this._joins.push({
     _tableName: table.tableName,
@@ -348,6 +348,42 @@ function joinFull<X extends TableMetaProvider>(this: IBuildableSelectQuery, ...a
     _type: 'FULL OUTER',
     _condition: condition(proxy(this._table, false, this._alias), proxy(table, undefined, alias?.tableName)) as any,
   });
+  return this;
+}
+
+function union(this: IBuildableSelectQuery, operand: IBuildableSubSelectQuery);
+function union(this: IBuildableSelectQuery, distinct: true, operand: IBuildableSubSelectQuery);
+function union(this: IBuildableSelectQuery, ...args: any[]) {
+  this._operators = this._operators ?? [];
+  this._operators.push({
+    _operator: 'UNION',
+    _distinct: typeof args[0] === 'boolean' ? args.shift() : false,
+    _operand: args.pop()
+  })
+  return this;
+}
+
+function intersect(this: IBuildableSelectQuery, operand: IBuildableSubSelectQuery);
+function intersect(this: IBuildableSelectQuery, distinct: true, operand: IBuildableSubSelectQuery);
+function intersect(this: IBuildableSelectQuery, ...args: any[]) {
+  this._operators = this._operators ?? [];
+  this._operators.push({
+    _operator: 'INTERSECT',
+    _distinct: typeof args[0] === 'boolean' ? args.shift() : false,
+    _operand: args.pop()
+  })
+  return this;
+}
+
+function except(this: IBuildableSelectQuery, operand: IBuildableSubSelectQuery);
+function except(this: IBuildableSelectQuery, distinct: true, operand: IBuildableSubSelectQuery);
+function except(this: IBuildableSelectQuery, ...args: any[]) {
+  this._operators = this._operators ?? [];
+  this._operators.push({
+    _operator: 'EXCEPT',
+    _distinct: typeof args[0] === 'boolean' ? args.shift() : false,
+    _operand: args.pop()
+  })
   return this;
 }
 
@@ -413,7 +449,7 @@ function computeReadableColumns(meta: ITableInfo, alias?: string) {
       return info && !info.sensitive && !info.builder && !info.relatedTo
     });
 
-  return columnExpressionsOf(fields, meta, alias)
+  return columnExpressionsOf(fields, meta, alias).map(strip)
 }
 
 
@@ -447,6 +483,9 @@ export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, ...a
     having,
     groupBy,
     orderBy,
+    union,
+    intersect,
+    except,
     limit,
     offset,
     asScalar() {

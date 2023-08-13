@@ -1,4 +1,4 @@
-import { IExpression, IJoin, IOrderBy, IReference } from './intermediate';
+import {IExpression, IJoin, IOrderBy, IReference, ISelectOperator} from './intermediate';
 import {NamedParameter, Operandable} from "./wrappers";
 
 export type DbValueType = string | number | boolean | Date | null | undefined;
@@ -136,6 +136,7 @@ export interface IBuildableSelectQuery {
   _where?: IExpression[]
   _groupBy?: IReference[]
   _having?: IExpression[]
+  _operators?: ISelectOperator[]
   _orderBy?: IOrderBy[]
   _limit?: number
   _offset?: number
@@ -151,6 +152,7 @@ export interface IBuildableSubSelectQuery {
   _where?: IExpression[]
   _groupBy?: IReference[]
   _having?: IExpression[]
+  _operators?: ISelectOperator[]
 }
 
 export interface IBuildableInsertQuery {
@@ -225,6 +227,14 @@ export interface ISelectBuilder<T> extends IWhereHandler<T> {
   joinFull<X extends TableMetaProvider>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
   joinFull<X extends TableMetaProvider>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
   offset(offset: number): this
+
+  // operators
+  union(operand: IBuildableSubSelectQuery): this
+  union(distinct: true, operand: IBuildableSubSelectQuery): this
+  intersect(operand: IBuildableSubSelectQuery): this
+  intersect(distinct: true, operand: IBuildableSubSelectQuery): this
+  except(operand: IBuildableSubSelectQuery): this
+  except(distinct: true, operand: IBuildableSubSelectQuery): this
 
   // from IWhereHandler<T> to ensure WebStorm resolves types correctly
   where(builder: WhereBuilder<T>): this

@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build:dev": "tsc --project tsconfig.json",
-    "build": "npm run build:dev && cp src/wrappers* dist/",
+    "build": "npm run build:dev ; cp src/wrappers* dist/",
     "lint": "eslint \"src/**/*.ts\"",
     "test": "jest"
   },

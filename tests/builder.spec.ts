@@ -1,7 +1,7 @@
 import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSymbol, Update, Upsert, of} from '../dist';
 import { Employee, Person, Tag } from './models';
 import { TableRef, readModelMeta } from '../dist/builder';
-import {count, dbField, dbTable, exists} from "../dist";
+import {count, dbField, dbTable, exists, case_} from "../dist";
 
 
 const tableInfo = readModelMeta(Person);
@@ -535,6 +535,124 @@ describe('Select', () => {
       // ignore
     }
   });
+
+  it ('union operator', () => {
+    const query = Select(Person)
+      .columns(['name'])
+      .union(true, Select(Person)
+        .columns(['name'])
+        .where(x => x.age.lt(18))
+      )
+      .where(x => x.age.gte(18))
+      .orderBy(['name']);
+
+    expect(query._operators).toStrictEqual([{
+      _operator: 'UNION',
+      _distinct: true,
+      _operand: {
+        "_type": "SELECT",
+        "_table": Person[TableMetadataSymbol],
+        "_alias": null,
+        "_distinct": false,
+        "_for": undefined,
+        "_columns": [{"_column": {"table": "Person", "name": "name"}}],
+        "_where": [{
+          "_operator": "<",
+          "_operands": [
+            {"_column": {"table": "Person", "name": "age"}},
+            18
+          ]
+        }]
+      }
+    }])
+  })
+
+  it('CASE operator', () => {
+    const query = Select(Person)
+      .columns(x => [alias(case_({when: x.age.gte(2), then: 'yes'}, {else: 'no'}), 'dynamic')])
+
+    expect(query._columns).toStrictEqual([{
+      "_alias": "dynamic",
+      "_operands": [{
+        "_operator": "CASE",
+        "_operands": [
+          {
+            "when": {
+              "_operator": ">=",
+              "_operands": [
+                { "_column": {"name": "age", "table": "Person"}},
+                2
+              ]
+            },
+            "then": "yes",
+          },
+          {"else": "no"}
+        ]
+      }]
+    }])
+  })
+
+  it ('intersect operator', () => {
+    const query = Select(Person)
+      .columns(['name'])
+      .intersect(Select(Person)
+        .columns(['name'])
+        .where(x => x.age.lt(18))
+      )
+      .where(x => x.age.gte(18))
+      .orderBy(['name']);
+
+    expect(query._operators).toStrictEqual([{
+      _operator: 'INTERSECT',
+      _distinct: false,
+      _operand: {
+        "_type": "SELECT",
+        "_table": Person[TableMetadataSymbol],
+        "_alias": null,
+        "_distinct": false,
+        "_for": undefined,
+        "_columns": [{"_column": {"table": "Person", "name": "name"}}],
+        "_where": [{
+          "_operator": "<",
+          "_operands": [
+            {"_column": {"table": "Person", "name": "age"}},
+            18
+          ]
+        }]
+      }
+    }])
+  })
+
+  it ('except operator', () => {
+    const query = Select(Person)
+      .columns(['name'])
+      .except(Select(Person)
+        .columns(['name'])
+        .where(x => x.age.lt(18))
+      )
+      .where(x => x.age.gte(18))
+      .orderBy(['name']);
+
+    expect(query._operators).toStrictEqual([{
+      _operator: 'EXCEPT',
+      _distinct: false,
+      _operand: {
+        "_type": "SELECT",
+        "_table": Person[TableMetadataSymbol],
+        "_alias": null,
+        "_distinct": false,
+        "_for": undefined,
+        "_columns": [{"_column": {"table": "Person", "name": "name"}}],
+        "_where": [{
+          "_operator": "<",
+          "_operands": [
+            {"_column": {"table": "Person", "name": "age"}},
+            18
+          ]
+        }]
+      }
+    }])
+  })
 });
 
 describe('Insert', () => {

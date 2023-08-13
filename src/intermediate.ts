@@ -58,6 +58,12 @@ export interface INamedParameter {
   _named: string;
 }
 
+export interface ISelectOperator {
+  _operator: 'UNION' | 'INTERSECT' | 'EXCEPT';
+  _distinct: boolean;
+  _operand: IBuildableSubSelectQuery;
+}
+
 export interface IConst {
   _const: null | string | number | boolean | (null | string | number | boolean)[];
 }

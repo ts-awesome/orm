@@ -1,4 +1,12 @@
-import {Column, IBuildableQuery, IOperandable, Order, TableMetaProvider, ITableRef, ITableInfo} from "./interfaces";
+import {
+  Column,
+  IOperandable,
+  Order,
+  TableMetaProvider,
+  ITableRef,
+  ITableInfo,
+  IBuildableSubSelectQuery
+} from "./interfaces";
 import {ColumnWrapper, FunctionCall, Operandable} from "./wrappers";
 import {TableMetadataSymbol} from "./symbols";
 
@@ -14,15 +22,15 @@ export function not(condition: boolean | IOperandable<boolean>): IOperandable<bo
   return new Operandable('NOT', [condition]) as IOperandable<boolean>
 }
 
-export function all<T=any>(subquery: IBuildableQuery): IOperandable<T> {
+export function all<T=any>(subquery: IBuildableSubSelectQuery): IOperandable<T> {
   return new Operandable('ALL', [subquery]) as IOperandable<T>
 }
 
-export function any<T=any>(subquery: IBuildableQuery): IOperandable<T> {
+export function any<T=any>(subquery: IBuildableSubSelectQuery): IOperandable<T> {
   return new Operandable('ANY', [subquery]) as IOperandable<T>
 }
 
-export function exists(subquery: IBuildableQuery): IOperandable<boolean> {
+export function exists(subquery: IBuildableSubSelectQuery): IOperandable<boolean> {
   return new Operandable('EXISTS', [subquery]) as IOperandable<boolean>
 }
 
@@ -77,4 +85,23 @@ export function alias<T>(expr: T | IOperandable<T>, name: string): IOperandable<
 
 export function cast<R=unknown, T=unknown>(expr: T | IOperandable<T>, type: string): IOperandable<R> {
   return new Operandable('CAST', [expr, type]) as IOperandable<R>
+}
+
+export type CaseOperand<T> = {when: IOperandable<boolean> | boolean; then: IOperandable<T> | T} | {else: IOperandable<T> | T};
+
+export function case_<T = unknown>(...args: CaseOperand<T>[]): IOperandable<T> {
+  let count = 0;
+  for(const block of args) {
+    count += ('else' in block) ? 1 : 0;
+  }
+
+  if (count > 1) {
+    throw new Error(`CASE can contain only one ELSE block`);
+  }
+
+  if (count == 1 && !( 'else' in args[args.length - 1])) {
+    throw new Error(`CASE should have ELSE as last block`);
+  }
+
+  return new Operandable('CASE', args);
 }
