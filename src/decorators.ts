@@ -63,7 +63,7 @@ interface IDBFieldMeta extends Omit<IFieldInfo, 'getValue' | 'relatedTo' | 'name
 export function dbField(target: any, key: string): void;
 export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator;
 export function dbField(...args: any[]): PropertyDecorator | void {
-  let fieldMeta;
+  let fieldMeta: string | IFieldInfo | null;
   if (args.length > 1 && typeof args[1] === 'string') {
     return validator(...(args as [unknown, string]));
   }
@@ -91,7 +91,7 @@ export function dbField(...args: any[]): PropertyDecorator | void {
 
     } else {
       fields.set(key.toString(), {
-        name: fieldMeta || key,
+        name: (fieldMeta as string) || key,
         getValue: x => x[key],
       });
     }

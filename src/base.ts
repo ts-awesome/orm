@@ -18,10 +18,14 @@ export abstract class BaseCompiler<TQuery> implements IBuildableQueryCompiler<TQ
 
 @injectable()
 export abstract class BaseExecutor<TQuery, R extends IQueryData = IQueryData> implements IQueryExecutor<TQuery, R> {
+  protected _beforeRequest?: (query: TQuery) => Promise<void>;
+  protected _afterRequest?: (query: TQuery, data: readonly Readonly<R>[]) => Promise<void>;
+
   execute(query: TQuery & WithParams): Promise<readonly R[]>;
   execute(query: TQuery & WithParams, scalar: true): Promise<number>;
   execute<X extends TableMetaProvider>(query: TQuery & WithParams, Model: X, sensitive?: boolean): Promise<readonly InstanceType<X>[]>;
   public async execute(query: TQuery & WithParams, Model?: unknown | true, sensitive = false): Promise<any> {
+    const proto = Object.getPrototypeOf(query);
     query = {
       ...query,
       params: {
@@ -29,7 +33,12 @@ export abstract class BaseExecutor<TQuery, R extends IQueryData = IQueryData> im
         ...query.params,
       }
     }
+    Object.setPrototypeOf(query, proto);
+
+    void this._beforeRequest?.(query);
     const result = await this.do(query);
+    void this._afterRequest?.(query, result);
+
     return reader(result, Model as any, sensitive);
   }
 
@@ -55,7 +64,7 @@ export abstract class BaseExecutorProvider<TQuery> implements IQueryExecutorProv
 
 @injectable()
 export abstract class BaseTransaction<TQuery, R extends IQueryData = IQueryData, IL = IsolationLevel> extends BaseExecutor<TQuery, R> implements ITransaction<TQuery, R, IL> {
-  readonly finished: boolean;
+  abstract readonly finished: boolean;
   abstract commit(): Promise<void>;
   abstract rollback(): Promise<void>;
   abstract setIsolationLevel(isolationLevel: IL): Promise<void>;
@@ -63,6 +72,18 @@ export abstract class BaseTransaction<TQuery, R extends IQueryData = IQueryData,
 
 @injectable()
 export abstract class BaseDriver<TQuery, R extends IQueryData = IQueryData, IL = IsolationLevel> extends BaseExecutor<TQuery, R> implements IQueryDriver<TQuery, R, IL> {
-  abstract begin(isolationLevel?: IL): Promise<ITransaction<TQuery, R, IL>>;
+  protected abstract startTransaction(isolationLevel?: IL): Promise<ITransaction<TQuery, R, IL>>;
+
+  async begin(isolationLevel?: IL): Promise<ITransaction<TQuery, R, IL>> {
+    const transaction = await this.startTransaction(isolationLevel);
+    if (transaction instanceof BaseExecutor) {
+      const instance = transaction as never as BaseDriver<TQuery, R>;
+      instance._afterRequest = this._afterRequest
+      instance._beforeRequest = this._beforeRequest
+      instance._namedParameters = { ...this._namedParameters };
+    }
+    return transaction;
+  }
+
   abstract end(): Promise<void>;
 }

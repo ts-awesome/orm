@@ -2,6 +2,8 @@ import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSy
 import { Employee, Person, Tag } from './models';
 import { TableRef, readModelMeta } from '../dist/builder';
 import {count, dbField, dbTable, exists, case_} from "../dist";
+import {NamedParameter, Operandable} from "../src/wrappers";
+import {dbFilterField, Queryable} from "../src";
 
 
 const tableInfo = readModelMeta(Person);
@@ -652,6 +654,112 @@ describe('Select', () => {
         }]
       }
     }])
+  })
+
+  it('COUNT unique', () => {
+    const query = Select(Person)
+      .columns(x => [count(x.id, true)]);
+
+    expect(query._columns).toStrictEqual([{
+      _func: "COUNT",
+      _args: [
+        "DISTINCT",
+        {
+          _column: {
+            name: 'id',
+            table: 'Person'
+          }
+        }
+      ]
+    }])
+  });
+
+  it('SELECT over subquery', () => {
+    const query = Select(
+        Select(Person)
+          .columns(x => [count(x.id)])
+          .groupBy(x => [x.age])
+      )
+      .columns(() => [count(undefined, true)]);
+
+    expect(query).toStrictEqual({
+      "_alias": "Person_SUBQUERY",
+      _columns: [{
+        _func: "COUNT",
+        _args: [
+          "DISTINCT",
+          '*'
+        ]
+      }],
+      "_distinct": false,
+      "_for": undefined,
+      "_table": {
+        "_alias": null,
+        "_columns": [{
+          "_func": "COUNT",
+          "_args": [{
+            "_column": {
+              "name": "id",
+              "table": "Person",
+            }
+          }]
+        }],
+        "_distinct": false,
+        "_for": undefined,
+        "_groupBy": [{
+          "_column": {
+            "name": "age",
+            "table": "Person",
+          }
+        }],
+        "_table": Person[TableMetadataSymbol],
+        "_type": "SELECT",
+        "fields": new Map,
+        "tableName": "Person_SUBQUERY",
+      },
+      "_type": "SELECT",
+    })
+  });
+
+  it('Select with lookup field', () => {
+    const np = new NamedParameter('keyNP')
+    @dbTable('other_table')
+    class SubModel {
+      @dbField({primaryKey: true})
+      id!: number;
+      @dbField
+      key!: number;
+      @dbField
+      value!: Date;
+    }
+    @dbTable('person')
+    class Person {
+      @dbField({primaryKey: true})
+      id!: number;
+      @dbField
+      value!: string;
+      @dbLookupField({
+        model: Date,
+        nullable: true,
+        source: 'value',
+        relation: SubModel,
+        where(prime: Queryable<Person>, other: Queryable<SubModel>) {
+          return and(
+            prime.id.eq(other.id),
+            other.key.eq(np)
+          )
+        }
+      })
+      lastAccess!: Date | null
+    }
+
+    const query = Select(Person)
+      .where(x => x.lastAccess.neq(null));
+
+    expect(query).toStrictEqual({
+      "_alias": null,
+      "_type": "SELECT",
+    })
   })
 });
 

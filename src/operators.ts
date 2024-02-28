@@ -42,8 +42,10 @@ export function sum<T>(value: IOperandable<T>): IOperandable<T> {
   return new FunctionCall('SUM', [value]) as IOperandable<T>
 }
 
-export function count<T>(value?: IOperandable<T>): IOperandable<number> {
-  return new FunctionCall('COUNT', [value || '*']) as IOperandable<number>
+export function count<T>(value?: IOperandable<T>): IOperandable<number>;
+export function count<T>(value: IOperandable<T>, unique: true): IOperandable<number>;
+export function count<T>(value?: IOperandable<T>, unique = false): IOperandable<number> {
+  return new FunctionCall('COUNT', unique ? ['DISTINCT', value || '*'] : [value || '*']) as IOperandable<number>
 }
 
 export function max<T>(value: IOperandable<T>): IOperandable<T> {

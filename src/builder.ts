@@ -420,7 +420,13 @@ export function readModelMeta<T extends TableMetaProvider>(Model: T, required = 
   return Model[TableMetadataSymbol] ?? {};
 }
 
-function fix<T>(x: T): T {
+function fix<T extends object>(x: T): T {
+  if (TableMetadataSymbol in x) {
+    Object.defineProperty(x, TableMetadataSymbol, {
+      enumerable: false,
+    })
+  }
+
   for (const prop of Object.keys(x)) {
     if (typeof x[prop] === 'function') {
       Object.defineProperty(x, prop, {
@@ -452,14 +458,20 @@ function computeReadableColumns(meta: ITableInfo, alias?: string) {
   return columnExpressionsOf(fields, meta, alias).map(strip)
 }
 
+const ContextSymbol = Symbol();
 
+export function Select<T extends TableMetaProvider>(_: IBuildableSelectQuery): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
 export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
 export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, distinct: true): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
 export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, forOp: SelectForOperation): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
 export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, forOp: SelectForOperation, distinct: true): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
-export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, ...args: unknown[]): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
+export function Select<T extends TableMetaProvider>(_: T | IOperandable<T> | IBuildableSelectQuery, ...args: unknown[]): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
   function isAlias(x: any): x is IAlias {
     return x && typeof x._alias === 'string';
+  }
+
+  function isSubquery(x: any): x is IBuildableSubSelectQuery {
+    return x && typeof x._type === 'string' && x._type === 'SELECT';
   }
 
   const forOr: SelectForOperation = typeof args[0] === 'string' ? args.shift() as any : undefined;
@@ -468,9 +480,36 @@ export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, ...a
   const meta = readModelMeta(isAlias(_) ? _._operands[0] : _);
 
   return fix({
+    get [TableMetadataSymbol](): ITableInfo {
+      const meta = {
+        tableName: this._table.tableName + '_SUBQUERY',
+        get fields() {
+          return new Map<string, IFieldInfo>(this[ContextSymbol]._columns.map(x => {
+            if ('_column' in x) {
+              return [x._column.name, {
+                name: x._column.name,
+                getValue() { return null },
+              }]
+            } else if ('_alias' in x) {
+              return [x._alias, {
+                name: x._alias,
+                getValue() { return null },
+              }]
+            }
+          }).filter(x => x))
+        }
+      };
+
+      Object.defineProperty(meta, ContextSymbol, {
+        enumerable: false,
+        value: this
+      })
+
+      return meta;
+    },
     _type: 'SELECT',
-    _table: meta,
-    _alias: isAlias(_) ? _._alias : null,
+    _table: isSubquery(_) ? {..._, ...meta} : meta,
+    _alias: isAlias(_) ? _._alias : isSubquery(_) ? meta.tableName : null,
     _distinct: distinct,
     _for: forOr,
     _columns: computeReadableColumns(meta, isAlias(_) ? _._alias : undefined),

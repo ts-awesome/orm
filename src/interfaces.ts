@@ -144,7 +144,7 @@ export interface IBuildableSelectQuery {
 
 export interface IBuildableSubSelectQuery {
   _type: 'SELECT'
-  _table: ITableInfo
+  _table: ITableInfo | (IBuildableSubSelectQuery & ITableInfo)
   _alias?: string
   _distinct?: boolean
   _columns?: IExpression[]
