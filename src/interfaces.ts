@@ -10,8 +10,8 @@ export interface IDbField<T = any, X = any> {
   writer?(value: T): DbValueType;
 }
 
-export interface SubQueryBuilder<T=number> {
-  (value: Operandable<T>, table: Queryable<T>): IBuildableSubSelectQuery
+export interface SubQueryBuilder<T=number, O=any> {
+  (value: Operandable<T>, table: Queryable<O>): IBuildableSubSelectQuery
 }
 
 declare type Class = new (...args: any) => any;
@@ -24,7 +24,7 @@ export interface IFieldInfo {
     tableName: string;
     keyField: string;
   };
-  builder?: SubQueryBuilder<any>;
+  builder?: SubQueryBuilder;
   sensitive?: true;
   default?: DbValueType;
   kind?: IDbField;

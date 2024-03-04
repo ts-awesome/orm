@@ -3,10 +3,13 @@ import {
   IFieldInfo,
   WhereBuilder,
   SubQueryBuilder,
+  Queryable,
+  IOperandable,
 } from './interfaces';
 import {TableMetadataSymbol} from "./symbols";
 
 import {readable} from "@ts-awesome/model-reader";
+import {Select} from "./builder";
 
 function ensureTableInfo(proto: any): ITableInfo {
   if (typeof proto[TableMetadataSymbol] !== 'object') {
@@ -65,14 +68,14 @@ export function dbField(fieldMeta?: string | IDBFieldMeta): PropertyDecorator;
 export function dbField(...args: any[]): PropertyDecorator | void {
   let fieldMeta: string | IFieldInfo | null;
   if (args.length > 1 && typeof args[1] === 'string') {
-    return validator(...(args as [unknown, string]));
+    return exec(...(args as [unknown, string]));
   }
 
   // eslint-disable-next-line prefer-const
   [fieldMeta] = args;
-  return validator;
+  return exec;
 
-  function validator(target: Object, key: string | symbol): void {
+  function exec(target: Object, key: string | symbol): void {
     const tableInfo = ensureTableInfo(target.constructor);
     const {fields} = tableInfo;
 
@@ -89,7 +92,7 @@ export function dbField(...args: any[]): PropertyDecorator | void {
         tableInfo.primaryKey = name;
       }
 
-    } else {
+    } else if (typeof key === 'string') {
       fields.set(key.toString(), {
         name: (fieldMeta as string) || key,
         getValue: x => x[key],
@@ -97,7 +100,7 @@ export function dbField(...args: any[]): PropertyDecorator | void {
     }
 
     const {model, nullable = false} = fields.get(key.toString());
-    readable(model as any, nullable as any)(target, key);
+    readable(model as any, nullable as true)(target, key);
   }
 }
 
@@ -121,7 +124,7 @@ export function dbFilterField<T=unknown>(fieldMeta: IDBFilterFieldMeta | SubQuer
       const name = key.toString();
       fields.set(key.toString(), {
         name,
-        builder: fieldMeta,
+        builder: fieldMeta as never,
         getValue: () => undefined,
       });
       return
