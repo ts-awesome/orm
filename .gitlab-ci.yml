@@ -25,6 +25,8 @@ publish:
   image: node:$NODE_VERSION
   only:
   - tags
+  environment:
+    name: npm
   script:
   - npm run lint
   - npm run build
