@@ -1,8 +1,7 @@
 import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSymbol, Update, Upsert, of} from '../dist';
 import { Employee, Person, Tag } from './models';
 import { TableRef, readModelMeta } from '../dist/builder';
-import {count, dbField, dbTable, exists, case_, dbLookupField} from "../dist";
-import {NamedParameter} from "../src/wrappers";
+import {count, dbField, dbTable, exists, case_} from "../dist";
 
 
 const tableInfo = readModelMeta(Person);
