@@ -16,6 +16,8 @@ build:
   - develop
   - merge_requests
   script:
+  - echo $NPM_RC
+  - cat $NPM_RC
   - npm run lint
   - npm run build
   - npm run test
