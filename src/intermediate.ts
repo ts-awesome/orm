@@ -40,6 +40,7 @@ export type IExpression = IFunctionCallOperation | IReference | IMultiOperation 
 export interface IOrderBy {
   _column: IColumnRef;
   _order?: 'ASC' | 'DESC';
+  _nulls?: 'FIRST' | 'LAST';
 }
 
 export interface IJoin {

@@ -56,12 +56,12 @@ export function min<T>(value: IOperandable<T>): IOperandable<T> {
   return new FunctionCall('MIN', [value]) as IOperandable<T>
 }
 
-export function asc<T>(value: Column<T>|IOperandable<T>|number): Order {
-  return <any>{...(typeof value === 'number' ? {_column: value} : <any>value), _order: 'ASC',}
+export function asc<T>(value: Column<T>|IOperandable<T>|number, nulls?: 'LAST' | 'FIRST'): Order {
+  return <any>{...(typeof value === 'number' ? {_column: value} : <any>value), _order: 'ASC', _nulls: nulls,}
 }
 
-export function desc<T>(value: Column<T>|IOperandable<T>|number): Order {
-  return <any>{...(typeof value === 'number' ? {_column: value} : <any>value), _order: 'DESC',}
+export function desc<T>(value: Column<T>|IOperandable<T>|number, nulls?: 'LAST' | 'FIRST'): Order {
+  return <any>{...(typeof value === 'number' ? {_column: value} : <any>value), _order: 'DESC', _nulls: nulls,}
 }
 
 export function of<T = unknown>(_: null, field: string): IOperandable<T>;

@@ -13,13 +13,22 @@ describe('Operators should return correct intermediate query', () => {
 
     it('Asc operator', () => {
         const result = asc(operandable);
-        expect(result).toStrictEqual({...operandable, _order: 'ASC'});
+        expect(result).toStrictEqual({...operandable, _order: 'ASC', _nulls: undefined});
+    });
+
+    it('Asc operator', () => {
+        const result = asc(operandable, 'LAST');
+        expect(result).toStrictEqual({...operandable, _order: 'ASC', _nulls: 'LAST'});
     });
 
     it('Desc operator', () => {
         const result = desc(operandable);
+        expect(result).toStrictEqual({...operandable, _order: 'DESC', _nulls: undefined});
+    });
 
-        expect(result).toStrictEqual({...operandable, _order: 'DESC'});
+    it('Desc operator', () => {
+        const result = desc(operandable, 'FIRST');
+        expect(result).toStrictEqual({...operandable, _order: 'DESC', _nulls: 'FIRST'});
     });
 
     it('Of operator', () => {
