@@ -25,8 +25,6 @@ publish:
   image: node:$NODE_VERSION
   only:
   - tags
-  environment:
-    name: npm
   script:
   - echo $NPM_RC
   - cat $NPM_RC
