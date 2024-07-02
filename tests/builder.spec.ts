@@ -1,7 +1,9 @@
 import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSymbol, Update, Upsert, of} from '../dist';
-import { Employee, Person, Tag } from './models';
+import {Employee, MailingList, Person, Tag} from './models';
 import { TableRef, readModelMeta } from '../dist/builder';
 import {count, dbField, dbTable, exists, case_} from "../dist";
+import {cast, IOperandable} from "../src";
+import {FunctionCall} from "../src/wrappers";
 
 
 const tableInfo = readModelMeta(Person);
@@ -779,7 +781,38 @@ describe('Insert', () => {
       city: person.city,
     };
     expect(query._values).toStrictEqual(expectation);
-    Insert(Person).values({...person, uid: 'a80ec30e-791c-4499-a243-70af8b2bf7ba'});
+  });
+
+  it('Insert record with cast', () => {
+    const query = Insert(Person).values({...person, city: cast(person.city, 'text')});
+    const expectation = {
+      id: person.id,
+      name: person.name,
+      age: person.age,
+      city: {
+        _operator: 'CAST',
+        _operands: [ person.city, 'text']
+      },
+    };
+    expect(query._values).toStrictEqual(expectation);
+  });
+
+  it('Insert record with function', () => {
+    function test<T>(value: IOperandable<T> | T): IOperandable<T> {
+      return new FunctionCall('TEST', [value]) as IOperandable<T>
+    }
+
+    const query = Insert(Person).values({...person, city: test(person.city)});
+    const expectation = {
+      id: person.id,
+      name: person.name,
+      age: person.age,
+      city: {
+        _func: 'TEST',
+        _args: [ person.city]
+      },
+    };
+    expect(query._values).toStrictEqual(expectation);
   });
 });
 
@@ -858,6 +891,73 @@ describe('Update', () => {
     };
     expect(query._values).toStrictEqual(expectation.values);
     expect(query._where).toStrictEqual(expectation.where);
+    expect(query._limit).toBe(limit);
+  });
+
+  it('Update record with updater and cast', () => {
+    const limit = 10;
+    const query = Update(Person)
+      .values(x => ({...person, city: cast(x.city, 'email')}))
+      .limit(limit);
+    const expectation = {
+      values: {
+        id: person.id,
+        name: person.name,
+        age: person.age,
+        city: {
+          _operator: 'CAST',
+          _operands: [
+            { _column: { name: 'city', table: 'Person' } },
+            'email'
+          ]
+        },
+      }
+    };
+    expect(query._values).toStrictEqual(expectation.values);
+    expect(query._limit).toBe(limit);
+  });
+
+  it('Update record with values with kinds', () => {
+    const limit = 10;
+    const email = 'Some@EXAMPLE.org';
+    const query = Update(MailingList)
+      .values({name: 'test', email}) //cast('some@example.org', 'email')})
+      .limit(limit);
+    const expectation = {
+      values: {
+        name: 'test',
+        email: {
+          _operator: 'CAST',
+          _operands: [
+            {_value: email.toLowerCase()},
+            'Email'
+          ]
+        },
+      }
+    };
+    expect(query._values).toStrictEqual(expectation.values);
+    expect(query._limit).toBe(limit);
+  });
+
+  it('Update record with updater with kinds', () => {
+    const limit = 10;
+    const email = 'Some@EXAMPLE.org';
+    const query = Update(MailingList)
+      .values(() => ({name: 'test', email}))
+      .limit(limit);
+    const expectation = {
+      values: {
+        name: 'test',
+        email: {
+          _operator: 'CAST',
+          _operands: [
+            {_value: email.toLowerCase()},
+            'Email'
+          ]
+        },
+      }
+    };
+    expect(query._values).toStrictEqual(expectation.values);
     expect(query._limit).toBe(limit);
   });
 });

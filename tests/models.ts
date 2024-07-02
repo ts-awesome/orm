@@ -1,4 +1,4 @@
-import { dbField, dbTable, IDbField, dbFilterField, and, Select } from '../src';
+import {dbField, dbTable, IDbField, dbFilterField, and, Select, DbValueType, IOperandable, cast} from '../src';
 
 const UUID: IDbField = {}
 
@@ -60,4 +60,29 @@ export class Employee {
   @dbField personId!: number;
   @dbField company!: string;
   @dbField salary!: number;
+}
+
+export const EMAIL: IDbField = {
+  reader(value: DbValueType) {
+    return typeof value === 'string' ? value.toLowerCase() : value
+  },
+  writer(value): DbValueType {
+    return typeof value === 'string' ? value.toLowerCase() : value
+  },
+  readQuery(name: IOperandable<string>): IOperandable<string> {
+    return cast(name as never, 'Email');
+  },
+  writeQuery(name: IOperandable<string>): IOperandable<string> {
+    return cast(name as never, 'Email');
+  }
+}
+
+export class MailingList {
+  @dbField({
+    primaryKey: true,
+    autoIncrement: true
+  })
+  public id!: number;
+  @dbField public name!: string;
+  @dbField({kind: EMAIL}) email!: string;
 }

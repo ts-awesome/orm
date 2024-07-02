@@ -24,8 +24,10 @@ import {
   IUpdateBuilder,
   IUpsertBuilder,
   JoinBuilder,
-  OrderBuilder, SelectForOperation,
+  OrderBuilder,
+  SelectForOperation,
   TableMetaProvider,
+  Values,
   ValuesBuilder,
   WhereBuilder,
 } from './interfaces';
@@ -150,7 +152,7 @@ function columnsOf<T>(_: ColumnsList<T>, tableInfo: ITableInfo, alias?: string):
   return _.map(field => columnReference(field as string, tableInfo, false, alias));
 }
 
-function validateModel<T>(_: Partial<T>, tableInfo: ITableInfo): void {
+function validateModel<T>(_: Values<T>, tableInfo: ITableInfo): void {
   validateFields(Object.keys(_), tableInfo);
 }
 
@@ -199,35 +201,36 @@ function groupBy<T>(this: IBuildableSelectQuery, _: ColumnsList<T> | GroupByBuil
   return this;
 }
 
-function values<T>(this: IBuildableValuesPartial<T>, _: Partial<T> | ValuesBuilder<T>) {
-  if (typeof _ === 'function') {
-    this._values = (_ as ValuesBuilder<T>)(proxy(this._table, false, this._alias));
-  } else {
-    validateModel(_, this._table);
-    this._values = Object
-      .keys(_)
-      .filter(prop => this._table.fields.has(prop))
-      .map(prop => this._table.fields.get(prop))
-      .filter(({relatedTo, builder}) => relatedTo == null && builder == null)
-      .reduce((p: any, {getValue, kind, name}: IFieldInfo) => {
-        let value: any = getValue(_);
+function values<T>(this: IBuildableValuesPartial<T>, _: Values<T> | ValuesBuilder<T>) {
+  const values: Values<T> = typeof _ === 'function'
+    ? (_ as ValuesBuilder<T>)(proxy(this._table, false, this._alias))
+    : {..._};
 
-        if (kind) {
-          if (typeof kind === 'string' || typeof kind === 'symbol') {
-            throw new Error(`DbField specified by string or symbol is not support since 1.0.0`);
-          }
+  validateModel(values, this._table);
+  this._values = Object
+    .keys(values)
+    .filter(prop => this._table.fields.has(prop))
+    .map(prop => this._table.fields.get(prop))
+    .filter(({relatedTo, builder}) => relatedTo == null && builder == null)
+    .reduce((p: Values<T>, {getValue, kind, name}: IFieldInfo) => {
+      let value: any = getValue(values);
 
-          const {writer, writeQuery} = kind;
-          if (typeof writer === 'function') {
-            value = writer(value);
-          }
-          if (typeof writeQuery === 'function') {
-            value = writeQuery(new UnnamedParameter(value), proxy(this._table, false, this._alias));
-          }
+      if (kind) {
+        if (typeof kind === 'string' || typeof kind === 'symbol') {
+          throw new Error(`DbField specified by string or symbol is not support since 1.0.0`);
         }
-        return { ...p, [name]: value };
-      }, {});
-  }
+
+        const {writer, writeQuery} = kind;
+        if (typeof writer === 'function') {
+          value = writer(value);
+        }
+        if (typeof writeQuery === 'function') {
+          value = writeQuery(new UnnamedParameter(value), proxy(this._table, false, this._alias));
+        }
+      }
+      return { ...p, [name]: value };
+    }, {});
+
   return this;
 }
 
@@ -391,7 +394,7 @@ export class TableRef<T extends TableMetaProvider> implements ITableRef<T> {
   private readonly info: ITableInfo;
   private readonly alias: string;
 
-  constructor(private table: T) {
+  constructor(table: T) {
     this.info = readModelMeta(table);
     this.alias = `${this.info.tableName}_${Date.now().toString(36)}`;
   }

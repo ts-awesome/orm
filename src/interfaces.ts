@@ -196,13 +196,13 @@ export type IBuildableQuery = IBuildableSelectQuery | IBuildableInsertQuery | IB
 
 export interface IWhereHandler<T> {
   where(builder: WhereBuilder<T>): this
-  where(value: Partial<T>): this
+  where(value: Values<T>): this
   limit(limit: number): this
 }
 
 export interface IValuesHandler<T> {
   values(builder: ValuesBuilder<T>): this
-  values(values: Partial<T>): this
+  values(values: Values<T>): this
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -238,7 +238,7 @@ export interface ISelectBuilder<T> extends IWhereHandler<T> {
 
   // from IWhereHandler<T> to ensure WebStorm resolves types correctly
   where(builder: WhereBuilder<T>): this
-  where(value: Partial<T>): this
+  where(value: Values<T>): this
   limit(limit: number): this
 
   asScalar<T = number>(): IOperandable<T>

@@ -3,13 +3,10 @@ import {
   IFieldInfo,
   WhereBuilder,
   SubQueryBuilder,
-  Queryable,
-  IOperandable,
 } from './interfaces';
 import {TableMetadataSymbol} from "./symbols";
 
 import {readable} from "@ts-awesome/model-reader";
-import {Select} from "./builder";
 
 function ensureTableInfo(proto: any): ITableInfo {
   if (typeof proto[TableMetadataSymbol] !== 'object') {
@@ -33,7 +30,7 @@ interface IDBIndexMeta<T> {
 export function dbTable<TFunction extends Function>(target: TFunction): TFunction | void;
 export function dbTable<T>(tableName?: string, uniqueIndexes?: readonly IDBIndexMeta<T>[]): ClassDecorator;
 export function dbTable<TFunction extends Function>(...args: any[]): ClassDecorator | TFunction | void {
-  let tableName, uniqueIndexes;
+  let tableName: string, uniqueIndexes: IDBIndexMeta<unknown>[] | undefined;
   if (args.length > 0 && typeof args[0] === 'function') {
     return validator<TFunction>(...(args as [TFunction]));
   }
@@ -94,7 +91,7 @@ export function dbField(...args: any[]): PropertyDecorator | void {
 
     } else if (typeof key === 'string') {
       fields.set(key.toString(), {
-        name: (fieldMeta as string) || key,
+        name: (fieldMeta as string) || (key as string),
         getValue: x => x[key],
       });
     }
