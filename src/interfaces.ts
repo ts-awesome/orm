@@ -58,6 +58,8 @@ export type Values<T> = {
 }
 
 export type ColumnsList<T> = Column<T>[];
+export type ColumnsOrIndexesList<T> = (Column<T>|number)[];
+export type ColumnsOrIndexesOrOrderList<T> = (Column<T>|number|Order)[];
 
 export interface IOperandable<T=any> {
   eq(value: T | IOperandable<T>): boolean;
@@ -101,7 +103,7 @@ export type HavingBuilder<T> = (model: Queryable<T>) => IOperandable<boolean> | 
 export type ValuesBuilder<T> = (model: Queryable<T>) => Values<T>;
 export type JoinBuilder<T, X> = (root: Queryable<T>, other: Queryable<X>) => IOperandable<boolean> | boolean;
 export type OrderBuilder<T> = (x: Columns<T>) => (Column<T>|Order|IOperandable<any>)[];
-export type GroupByBuilder<T> = (x: Columns<T>) => Column<T>[];
+export type GroupByBuilder<T> = (x: Columns<T>) => (Column<T>|number)[];
 export type ColumnsBuilder<T> = (x: Queryable<T>) => (Column<T>|IOperandable<any>)[];
 
 export type Column<T> = keyof T;
@@ -214,10 +216,12 @@ export interface ISelectBuilder<T> extends IWhereHandler<T> {
   columns(builder: ColumnsBuilder<T>): this
   columns(list: ColumnsList<T>): this
   groupBy(builder: GroupByBuilder<T>): this
-  groupBy(list: ColumnsList<T>): this
+  groupBy(list: ColumnsOrIndexesList<T>): this
   orderBy(builder: OrderBuilder<T>): this
-  orderBy(list: ColumnsList<T>): this
+  orderBy(list: ColumnsOrIndexesOrOrderList<T>): this
   having(builder: HavingBuilder<T>): this
+  offset(offset: number): this
+
   join<X extends TableMetaProvider>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
   join<X extends TableMetaProvider>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
   joinLeft<X extends TableMetaProvider>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
@@ -226,7 +230,6 @@ export interface ISelectBuilder<T> extends IWhereHandler<T> {
   joinRight<X extends TableMetaProvider>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
   joinFull<X extends TableMetaProvider>(Model: X, on: JoinBuilder<T, InstanceType<X>>): this
   joinFull<X extends TableMetaProvider>(Model: X, alias: ITableRef<X>, on: JoinBuilder<T, InstanceType<X>>): this
-  offset(offset: number): this
 
   // operators
   union(operand: IBuildableSubSelectQuery): this
@@ -236,12 +239,12 @@ export interface ISelectBuilder<T> extends IWhereHandler<T> {
   except(operand: IBuildableSubSelectQuery): this
   except(distinct: true, operand: IBuildableSubSelectQuery): this
 
-  // from IWhereHandler<T> to ensure WebStorm resolves types correctly
+  asScalar<T = number>(): IOperandable<T>
+
+  // overrides IWhereHandler<T> to ensure WebStorm resolves types correctly
   where(builder: WhereBuilder<T>): this
   where(value: Values<T>): this
   limit(limit: number): this
-
-  asScalar<T = number>(): IOperandable<T>
 }
 
 export interface IInsertBuilder<T> extends IValuesHandler<T> {}

@@ -86,6 +86,13 @@ function Constant(value) {
 }
 Constant.prototype = SupportedOperations;
 
+function FunctionWindowCall(func, filter, window, args) {
+  this._func = func;
+  this._filter = filter ?? undefined;
+  this._over = window.def();
+  this._args = args.map(op => skipAliasInOperations(op));
+}
+FunctionWindowCall.prototype = SupportedOperations;
 
 module.exports = {
   SupportedOperations,
@@ -96,4 +103,5 @@ module.exports = {
   Constant,
   AliasWrapper,
   Operandable,
+  FunctionWindowCall,
 }

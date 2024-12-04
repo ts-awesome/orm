@@ -1,5 +1,8 @@
 import {ElementType, IOperandable} from './interfaces';
-import {IColumnRef} from "./intermediate";
+import {IColumnRef} from './intermediate';
+import {Window} from "./builder";
+
+
 
 declare class ColumnWrapper<T> implements IOperandable<T> {
   constructor(ref: IColumnRef);
@@ -162,6 +165,39 @@ declare class Constant<T> implements IOperandable<T> {
   xor(value: IOperandable<T> | T): IOperandable<T>;
 }
 
+declare class FunctionWindowCall<T> implements IOperandable<T> {
+  constructor(func: string, filter: boolean | IOperandable<boolean> | null, over: Window<any>, args: any[]);
+
+  add(value: IOperandable<T> | T): IOperandable<T>;
+  and(value: IOperandable<T> | T): IOperandable<T>;
+  between(min: IOperandable<T> | T, max: IOperandable<T> | T): boolean;
+  div(value: IOperandable<T> | T): IOperandable<T>;
+  eq(value: IOperandable<T> | T): boolean;
+  gt(value: IOperandable<T> | T): boolean;
+  gte(value: IOperandable<T> | T): boolean;
+  has(value: ElementType<T> | IOperandable<ElementType<T>>): boolean;
+  in(value: T[] | Iterable<T> | IOperandable<T[]>): boolean;
+  like(value: string): boolean;
+  lt(value: IOperandable<T> | T): boolean;
+  lte(value: IOperandable<T> | T): boolean;
+  mod(value: IOperandable<T> | T): IOperandable<T>;
+  mul(value: IOperandable<T> | T): IOperandable<T>;
+  neq(value: IOperandable<T> | T): boolean;
+  or(value: IOperandable<T> | T): IOperandable<T>;
+  sub(value: IOperandable<T> | T): IOperandable<T>;
+  xor(value: IOperandable<T> | T): IOperandable<T>;
+}
+
 declare const SupportedOperations: any;
 
-export {ColumnWrapper, FunctionCall, Operandable, NamedParameter, UnnamedParameter, Constant, SupportedOperations, AliasWrapper}
+export {
+  ColumnWrapper,
+  FunctionCall,
+  Operandable,
+  NamedParameter,
+  UnnamedParameter,
+  Constant,
+  SupportedOperations,
+  AliasWrapper,
+  FunctionWindowCall
+}

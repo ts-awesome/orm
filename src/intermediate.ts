@@ -30,6 +30,23 @@ export interface IFunctionCallOperation {
   _args: IExpression[];
 }
 
+export interface IWindowDefinition {
+  _extends?: IWindowDefinition
+  _orderBy?: IOrderBy[]
+  _groupBy?: IReference[]
+  _mode?: 'ROWS' | 'RANGE' | 'GROUPS';
+  _start?: string;
+  _end?: string;
+  _exclusion?: 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS';
+}
+
+export interface IFunctionWindowCallOperation {
+  _func: 'first_value' | 'last_value';
+  _filter?: IExpression;
+  _over: IWindowDefinition;
+  _args: IExpression[];
+}
+
 export interface IReference {
   _column: IColumnRef;
 }

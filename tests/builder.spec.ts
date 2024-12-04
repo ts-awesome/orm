@@ -1,8 +1,7 @@
 import {alias, and, asc, Delete, desc, Insert, max, Select, sum, TableMetadataSymbol, Update, Upsert, of} from '../dist';
 import {Employee, MailingList, Person, Tag} from './models';
-import { TableRef, readModelMeta } from '../dist/builder';
-import {count, dbField, dbTable, exists, case_} from "../dist";
-import {cast, IOperandable} from "../src";
+import { TableRef, readModelMeta, Window } from '../dist/builder';
+import {count, dbField, dbTable, exists, case_, cast, first_value, IOperandable} from "../dist";
 import {FunctionCall} from "../src/wrappers";
 
 
@@ -296,12 +295,24 @@ describe('Select', () => {
     expect(query._having).toStrictEqual(expectation._having);
   });
 
-  it('Group by', () => {
+  it('Group by list', () => {
     const queryThroughList = Select(Person).groupBy(['city']);
-    const queryThroughBuilder = Select(Person).groupBy(({city}) => [city]);
     const expectation = [{_column: {table: tableName, name: 'city'}}];
 
     expect(queryThroughList._groupBy).toStrictEqual(expectation);
+  });
+
+  it('Group by builder', () => {
+    const queryThroughBuilder = Select(Person).groupBy(({city}) => [city]);
+    const expectation = [{_column: {table: tableName, name: 'city'}}];
+
+    expect(queryThroughBuilder._groupBy).toStrictEqual(expectation);
+  });
+
+  it('Group by index', () => {
+    const queryThroughBuilder = Select(Person).groupBy([1]);
+    const expectation = [{_column: {name: 1}}];
+
     expect(queryThroughBuilder._groupBy).toStrictEqual(expectation);
   });
 
@@ -762,6 +773,80 @@ describe('Select', () => {
   //     "_type": "SELECT",
   //   })
   // })
+
+  it('SELECT with WINDOW', () => {
+    const win1 = new Window(Person)
+      .partitionBy(['id'])
+      .orderBy(['id']);
+
+    const win2 = new Window(Person, win1)
+      .partitionBy(['id'])
+      .orderBy(['id'])
+      .groups()
+      .start(5, 'PRECEDING')
+      .end(5, 'FOLLOWING')
+      .exclusion('CURRENT ROW');
+
+    const query = Select(Person)
+      .columns(x => [
+        x.id,
+        alias(first_value(x.name, win2 as never, x.city.like('test%')), 'first_value_of_name'),
+      ]);
+
+    expect(query).toStrictEqual({
+      "_alias": null,
+      _columns: [
+        { _column: {name: 'id', table: "Person"} },
+        {
+          _alias: 'first_value_of_name',
+          _operands: [
+            {
+              _func: "first_value",
+              _args: [
+                { _column: {name: 'name', table: "Person"} },
+              ],
+              _filter: {
+                _operands: [
+                  { _column: {name: 'city', table: "Person"} },
+                  "test%",
+                ],
+                _operator: "LIKE",
+              },
+              _over: {
+                _extends: {
+                  _extends: undefined,
+                  _mode: undefined,
+                  _start: undefined,
+                  _end: undefined,
+                  _exclusion: undefined,
+                  _groupBy: [
+                    { _column: {name: 'id', table: "Person"} },
+                  ],
+                  _orderBy: [
+                    { _column: {name: 'id', table: "Person"} },
+                  ],
+                },
+                _mode: "GROUPS",
+                _start: "5 PRECEDING",
+                _end: "5 FOLLOWING",
+                _exclusion: "CURRENT ROW",
+                _groupBy: [
+                  { _column: {name: 'id', table: "Person"} },
+                ],
+                _orderBy: [
+                  { _column: {name: 'id', table: "Person"} },
+                ],
+              },
+            }
+          ]
+        }
+      ],
+      "_distinct": false,
+      "_for": undefined,
+      "_table": Person[TableMetadataSymbol],
+      "_type": "SELECT",
+    });
+  })
 });
 
 describe('Insert', () => {

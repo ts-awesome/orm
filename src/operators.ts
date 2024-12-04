@@ -7,8 +7,9 @@ import {
   ITableInfo,
   IBuildableSubSelectQuery
 } from "./interfaces";
-import {ColumnWrapper, FunctionCall, Operandable} from "./wrappers";
+import {ColumnWrapper, FunctionCall, FunctionWindowCall, Operandable} from "./wrappers";
 import {TableMetadataSymbol} from "./symbols";
+import {Window} from "./builder";
 
 export function and(...operands: (boolean | IOperandable<boolean>)[]): IOperandable<boolean> {
   return new Operandable('AND', operands) as IOperandable<boolean>
@@ -106,4 +107,87 @@ export function case_<T = unknown>(...args: CaseOperand<T>[]): IOperandable<T> {
   }
 
   return new Operandable('CASE', args);
+}
+
+export function row_number(
+  over: Window<any>,
+  filter?: IOperandable<boolean> | boolean
+): IOperandable<number> {
+  return new FunctionWindowCall('row_number', filter ?? null, over, []) as IOperandable<number>
+}
+
+export function rank(
+  over: Window<any>,
+  filter?: IOperandable<boolean> | boolean
+): IOperandable<number> {
+  return new FunctionWindowCall('rank', filter ?? null, over, []) as IOperandable<number>
+}
+
+export function dense_rank(
+  over: Window<any>,
+  filter?: IOperandable<boolean> | boolean
+): IOperandable<number> {
+  return new FunctionWindowCall('dense_rank', filter ?? null, over, []) as IOperandable<number>
+}
+
+export function percent_rank(
+  over: Window<any>,
+  filter?: IOperandable<boolean> | boolean
+): IOperandable<number> {
+  return new FunctionWindowCall('percent_rank', filter ?? null, over, []) as IOperandable<number>
+}
+
+export function cume_dist(
+  over: Window<any>,
+  filter?: IOperandable<boolean> | boolean
+): IOperandable<number> {
+  return new FunctionWindowCall('cume_dist', filter ?? null, over, []) as IOperandable<number>
+}
+
+
+
+export function first_value<T>(
+  value: Column<T>|IOperandable<T>,
+  over: Window<any>,
+  filter?: IOperandable<boolean> | boolean
+): IOperandable<unknown> {
+  return new FunctionWindowCall('first_value', filter ?? null, over, [value]) as IOperandable<unknown>
+}
+
+export function last_value<T>(
+  value: Column<T>|IOperandable<T>,
+  over: Window<any>,
+  filter?: IOperandable<boolean> | boolean
+): IOperandable<unknown> {
+  return new FunctionWindowCall('last_value', filter ?? null, over, [value]) as IOperandable<unknown>
+}
+
+export function nth_value<T>(
+  value: Column<T>|IOperandable<T>,
+  n: number,
+  over: Window<any>,
+  filter?: IOperandable<boolean> | boolean
+): IOperandable<unknown> {
+  return new FunctionWindowCall('nth_value', filter ?? null, over, [value, n]) as IOperandable<unknown>
+}
+
+export function lag<T>(
+  value: Column<T>|IOperandable<T>,
+  offset: number,
+  def: T | null,
+  over: Window<any>,
+  filter?: IOperandable<boolean> | boolean
+): IOperandable<T> {
+  return new FunctionWindowCall('lag', filter ?? null, over, [value, offset ?? 1, def ?? null]) as IOperandable<T>
+}
+
+
+export function lead<T>(
+  value: Column<T>|IOperandable<T>,
+  offset: number,
+  def: T | null,
+  over: Window<any>,
+  filter?: IOperandable<boolean> | boolean
+): IOperandable<T> {
+  return new FunctionWindowCall('lead', filter ?? null, over, [value, offset ?? 1, def ?? null]) as IOperandable<T>
 }

@@ -32,6 +32,6 @@
     "@ts-awesome/model-reader": "^1.0.3"
   },
   "peerDependencies": {
-    "inversify": "^5.0.0 || ^ 6.0.0"
+    "inversify": "^5.0.0 || ^6.0.0"
   }
 }

@@ -2,6 +2,8 @@ import {AliasWrapper, ColumnWrapper, Operandable, UnnamedParameter} from './wrap
 import {
   ColumnsBuilder,
   ColumnsList,
+  ColumnsOrIndexesList,
+  ColumnsOrIndexesOrOrderList,
   GroupByBuilder,
   HavingBuilder,
   IBuildableDeleteQuery,
@@ -32,7 +34,7 @@ import {
   WhereBuilder,
 } from './interfaces';
 import {and} from './operators';
-import {IAlias, IExpression, IReference} from "./intermediate";
+import {IAlias, IExpression, IOrderBy, IReference, IWindowDefinition} from "./intermediate";
 import {TableMetadataSymbol} from "./symbols";
 
 export interface IExpr {
@@ -65,6 +67,10 @@ function columnExpression(property: string, tableInfo: ITableInfo, ignoreTableNa
 }
 
 function columnReference(property: string, tableInfo: ITableInfo, ignoreTableName?: boolean, alias?: string): IReference {
+  if (typeof property === 'number') {
+    return {_column: {name: property}};
+  }
+
   const info = tableInfo.fields.get(property);
   if (!info) {
     throw new Error(`Property ${property} should be decorated with @dbField`);
@@ -145,6 +151,10 @@ function columnExpressionsOf<T>(_: ColumnsList<T>, tableInfo: ITableInfo, alias?
 function columnsOf<T>(_: ColumnsList<T>, tableInfo: ITableInfo, alias?: string): IReference[] {
   const {fields} = tableInfo;
   for (const field of _) {
+    if (typeof field === 'number') {
+      // skip indexes
+      continue;
+    }
     if (!fields.has(field as string) || fields.get(field as string).relatedTo || fields.get(field as string).builder) {
       throw new Error(`Field '${field.toString()}' should be decorated with @dbField`);
     }
@@ -463,20 +473,20 @@ function computeReadableColumns(meta: ITableInfo, alias?: string) {
 
 const ContextSymbol = Symbol();
 
+function isAlias(x: any): x is IAlias {
+  return x && typeof x._alias === 'string';
+}
+
+function isSubquery(x: any): x is IBuildableSubSelectQuery {
+  return x && typeof x._type === 'string' && x._type === 'SELECT';
+}
+
 export function Select<T extends TableMetaProvider>(_: IBuildableSelectQuery): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
 export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
 export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, distinct: true): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
 export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, forOp: SelectForOperation): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
 export function Select<T extends TableMetaProvider>(_: T | IOperandable<T>, forOp: SelectForOperation, distinct: true): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery;
 export function Select<T extends TableMetaProvider>(_: T | IOperandable<T> | IBuildableSelectQuery, ...args: unknown[]): ISelectBuilder<InstanceType<T>> & IBuildableSelectQuery {
-  function isAlias(x: any): x is IAlias {
-    return x && typeof x._alias === 'string';
-  }
-
-  function isSubquery(x: any): x is IBuildableSubSelectQuery {
-    return x && typeof x._type === 'string' && x._type === 'SELECT';
-  }
-
   const forOr: SelectForOperation = typeof args[0] === 'string' ? args.shift() as any : undefined;
   const distinct: boolean = typeof args[0] === 'boolean' ? args.shift() as any : false;
 
@@ -581,4 +591,99 @@ export function Delete<T extends TableMetaProvider>(_: T): IDeleteBuilder<Instan
     where,
     limit,
   }) as IBuildableDeleteQuery as any;
+}
+
+interface IFrameExclusionBuilder<T extends TableMetaProvider> {
+  exclusion(exclude: 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS'): Window<T>;
+}
+
+interface IFrameEndBuilder<T extends TableMetaProvider> {
+  end(value: 'CURRENT ROW'): IFrameExclusionBuilder<T> & Window<T>
+  end(offset: 'UNBOUNDED' | number, order: 'PRECEDING' | 'FOLLOWING'): IFrameExclusionBuilder<T> & Window<T>
+}
+
+interface IFrameStartBuilder<T extends TableMetaProvider> {
+  start(value: 'CURRENT ROW'): IFrameEndBuilder<T> & IFrameExclusionBuilder<T> & Window<T>;
+  start(offset: 'UNBOUNDED' | number, order: 'PRECEDING' | 'FOLLOWING'): IFrameEndBuilder<T> & IFrameExclusionBuilder<T> & Window<T>;
+}
+
+// noinspection JSUnusedLocalSymbols
+export class Window<T extends TableMetaProvider> {
+  private readonly _table: ITableInfo;
+  private readonly _alias: string;
+
+  private _groupBy?: IReference[]
+  private _orderBy?: IOrderBy[]
+  private _extends?: IWindowDefinition;
+  private _mode?: 'RANGE' | 'ROWS' | 'GROUPS';
+  private _start?: string;
+  private _end?: string;
+  private _exclusion?: 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS';
+
+  constructor(Model: T, extend?: Window<any>) {
+    this._extends = extend as any;
+
+    this._table = readModelMeta(isAlias(Model) ? Model._operands[0] : Model);
+    this._alias = isAlias(Model) ? Model._alias : isSubquery(Model) ? this._table.tableName : null;
+  }
+
+  partitionBy(builder: GroupByBuilder<InstanceType<T>>): this;
+  partitionBy(list: ColumnsOrIndexesList<InstanceType<T>>): this;
+  partitionBy(x: unknown): this {
+    groupBy.call(this, x);
+    return this;
+  }
+
+  orderBy(builder: OrderBuilder<InstanceType<T>>): this;
+  orderBy(list: ColumnsOrIndexesOrOrderList<InstanceType<T>>): this;
+  orderBy(x: unknown): this {
+    orderBy.call(this, x);
+    return this;
+  }
+
+  range(): IFrameStartBuilder<T> {
+    this._mode = 'RANGE';
+    return this as any
+  }
+
+  rows(): IFrameStartBuilder<T> {
+    this._mode = 'ROWS';
+    return this as any
+  }
+
+  groups(): IFrameStartBuilder<T> {
+    this._mode = 'GROUPS';
+    return this as any
+  }
+
+  protected start(value: 'CURRENT ROW'): IFrameEndBuilder<T> & IFrameExclusionBuilder<T> & Window<T>;
+  protected start(offset: 'UNBOUNDED' | number, order: 'PRECEDING' | 'FOLLOWING'): IFrameEndBuilder<T> & IFrameExclusionBuilder<T> & Window<T>;
+  protected start(value: string | number, order?: string): IFrameEndBuilder<T> & IFrameExclusionBuilder<T> & Window<T> {
+    this._start = [value, order].filter(x => x). join(' ');
+    return this as any
+  }
+
+  protected end(value: 'CURRENT ROW'): IFrameEndBuilder<T> & IFrameExclusionBuilder<T> & Window<T>;
+  protected end(offset: 'UNBOUNDED' | number, order: 'PRECEDING' | 'FOLLOWING'): IFrameEndBuilder<T> & IFrameExclusionBuilder<T> & Window<T>;
+  protected end(value: string | number, order?: string): IFrameEndBuilder<T> & IFrameExclusionBuilder<T> & Window<T> {
+    this._end = [value, order].filter(x => x). join(' ');
+    return this as any
+  }
+
+  protected exclusion(exclude: 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS'): Window<T> {
+    this._exclusion = exclude;
+    return this;
+  }
+
+  protected def(): IWindowDefinition {
+    return {
+      _extends: (this._extends as any)?.def(),
+      _groupBy: this._groupBy,
+      _orderBy: this._orderBy,
+      _mode: this._mode,
+      _start: this._start,
+      _end: this._end,
+      _exclusion: this._exclusion,
+    }
+  }
 }
