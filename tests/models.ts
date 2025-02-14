@@ -19,6 +19,9 @@ export class Person {
   @dbField age!: number;
   @dbField city!: string;
 
+  @dbField({sensitive: true, nullable: true})
+  password?: string;
+
   @dbFilterField({
     table: 'employee',
     keyField: 'person',

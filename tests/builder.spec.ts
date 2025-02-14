@@ -362,6 +362,7 @@ describe('Select', () => {
             { "_column": { name: 'name', table: 'person_filter' }},
             { "_column": { name: 'age', table: 'person_filter' }},
             { "_column": { name: 'city', table: 'person_filter' }},
+            { "_column": { name: 'password', table: 'person_filter' }},
           ],
           "_distinct": false,
           "_for": undefined,

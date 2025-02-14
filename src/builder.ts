@@ -465,7 +465,7 @@ function computeReadableColumns(meta: ITableInfo, alias?: string) {
   const fields = keys
     .filter(x => {
       const info = meta.fields.get(x) as IFieldInfo | null;
-      return info && !info.sensitive && !info.builder && !info.relatedTo
+      return info && !info.builder && !info.relatedTo
     });
 
   return columnExpressionsOf(fields, meta, alias).map(strip)

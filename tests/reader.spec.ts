@@ -43,6 +43,7 @@ describe('DbReader', () => {
     class Model {
       @dbField public readonly id!: number;
       @dbField('raw') public readonly value!: string;
+      @dbField({sensitive: true, nullable: true}) public readonly password?: string;
       @dbField({kind: DB_JSON, model: [Person]}) public readonly personal!: Person[];
 
       constructor(id, raw, personal) {
@@ -55,11 +56,43 @@ describe('DbReader', () => {
     const model = {
       id: "5",
       raw: false,
-      personal: JSON.stringify(persons)
+      personal: JSON.stringify(persons),
+      password: 'test'
     }
     const expected = new Model(5, 'false', persons);
 
     const results = reader([model], Model);
+    expect(results.length).toBe(1);
+    const [result] = results;
+    expect(result).toBeInstanceOf(Model);
+    expect(result).toEqual(expected);
+  });
+
+  it('read Model incl sensitive', () => {
+    @dbTable
+    class Model {
+      @dbField public readonly id!: number;
+      @dbField('raw') public readonly value!: string;
+      @dbField({sensitive: true, nullable: true}) public readonly password?: string;
+      @dbField({kind: DB_JSON, model: [Person]}) public readonly personal!: Person[];
+
+      constructor(id, raw, personal, password) {
+        this.id = id;
+        this.value = raw;
+        this.personal = personal
+        this.password = password
+      }
+    }
+
+    const model = {
+      id: "5",
+      raw: false,
+      personal: JSON.stringify(persons),
+      password: 'test'
+    }
+    const expected = new Model(5, 'false', persons, 'test');
+
+    const results = reader([model], Model, true);
     expect(results.length).toBe(1);
     const [result] = results;
     expect(result).toBeInstanceOf(Model);
@@ -82,6 +115,29 @@ describe('DbReader', () => {
 
     const results = reader([], Model);
     expect(results.length).toBe(0);
+  });
+
+  it('read Object from no json', () => {
+    @dbTable
+    class Model {
+      @dbField public readonly id!: number;
+      @dbField('raw') public readonly value!: string;
+      @dbField({kind: DB_JSON, model: Object, nullable: true}) public readonly some_other!: object | null;
+
+      constructor(id, raw, some_other) {
+        this.id = id;
+        this.value = raw;
+        this.some_other = some_other
+      }
+    }
+
+    const results = reader([{id: "5", value: "test", some_other: JSON.stringify({hello: 2})}], Model);
+    expect(results.length).toBe(1);
+    expect(results[0]).toEqual({
+      id: 5,
+      value: "test",
+      some_other: {hello: 2},
+    })
   });
 
   it('read scalar', () => {
